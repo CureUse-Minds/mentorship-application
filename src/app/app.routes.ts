@@ -5,25 +5,33 @@ import { AuthGuard } from './core/guards/auth.guard';
 import { GuestGuard } from './core/guards/guest.guard';
 
 export const routes: Routes = [
-  { path: '', redirectTo: '/dashboard', pathMatch: 'full' },
-  { 
-    path: 'login', 
+  { path: '', redirectTo: '/home', pathMatch: 'full' },
+  {
+    path: 'login',
     component: LoginComponent,
-    canActivate: [GuestGuard]
+    canActivate: [GuestGuard],
   },
-  { 
-    path: 'register', 
+  {
+    path: 'register',
     component: RegisterComponent,
-    canActivate: [GuestGuard]
+    canActivate: [GuestGuard],
   },
-  { 
-    path: 'verify-email', 
-    loadComponent: () => import('./core/components/email-verification/email-verification.component').then(c => c.EmailVerificationComponent)
+  {
+    path: 'home',
+    loadComponent: () => import('./pages/homepage/homepage.component').then((c) => c.Homepage),
   },
-  { 
-    path: 'dashboard', 
-    loadComponent: () => import('./pages/dashboard/dashboard.component').then(c => c.DashboardComponent),
-    canActivate: [AuthGuard]
+  {
+    path: 'verify-email',
+    loadComponent: () =>
+      import('./core/components/email-verification/email-verification.component').then(
+        (c) => c.EmailVerificationComponent
+      ),
   },
-  { path: '**', redirectTo: '/dashboard' }
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./pages/dashboard/dashboard.component').then((c) => c.DashboardComponent),
+    canActivate: [AuthGuard],
+  },
+  { path: '**', redirectTo: '' },
 ];

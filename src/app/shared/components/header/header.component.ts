@@ -13,7 +13,7 @@ export class Header {
   user = this.auth.getCurrentUser;
 
   isLoggedIn = computed(() => !this.user());
-
+  // FIX: this. or maybe we need to add logout component then direct it ther when clicked.
   logout() {
     this.auth.logout();
   }

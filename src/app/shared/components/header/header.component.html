@@ -1,16 +1,20 @@
 <header class="w-full sticky top-0 z-40 bg-white/80 backdrop-blur border-b border-slate-100">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
     <a routerLink="/" class="flex items-center gap-2">
-      <div class="text-2xl font-extrabold text-emerald-500/80 font-sans font-">Lama</div>
+      <div class="text-3xl font-extrabold text-emerald-500/80 font-sans italic">Lama</div>
     </a>
 
-    <nav class="invisible md:flex items-center gap-8 text-sm font-medium text-gray-700">
-      @if (isLoggedIn()) {
-      <a routerLink="/dashboard" routerLinkActive="text-gray-700">Dashboard</a>
+    <!-- FIX: navbar when logged in, will comment out for the meantime-->
+    <!-- <nav class="invisible md:flex items-center gap-8 text-sm font-medium text-gray-700">
+      @if (isLoggedIn()) { -->
+    <!-- ADD: (feature) search bar for searching for mentors (?) i'm thinking we can also search for specific skills or expertise -->
+    <!-- <a routerLink="/dashboard" routerLinkActive="text-gray-700">Dashboard</a>
       }
-    </nav>
+    </nav> -->
 
-    <div class="flex items-center gap-3">
+    <!-- FIX: function not working: this is not showing when user is not logged in, will work on this later. will comment out for the meantime  -->
+    <!-- <div class="flex items-center gap-3">
+      @if (!isLoggedIn()) {
       <a
         routerLink="/login"
         class="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 border border-blue-500 hover:border-transparent rounded"
@@ -19,6 +23,27 @@
       <a
         routerLink="/register"
         class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+        >Get Started</a
+      >
+      } @else {
+      <button
+        class="bg-blue-500 hover:bg-blue-300 text-white font-bold py-2 px-4 rounded"
+        (click)="logout()"
+      >
+        Logout
+      </button>
+      }
+    </div> -->
+
+    <div class="flex items-center gap-3">
+      <a
+        routerLink="/login"
+        class="bg-transparent hover:bg-blue-500 text-blue-700 font-semibold hover:text-white py-2 px-4 hover:border-transparent rounded"
+        >Login</a
+      >
+      <a
+        routerLink="/register"
+        class="bg-emerald-500 hover:bg-emerald-200 text-white hover:text-gray-700 font-bold py-2 px-4 rounded"
         >Get Started</a
       >
     </div>

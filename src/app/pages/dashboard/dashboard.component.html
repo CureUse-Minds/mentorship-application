@@ -1,0 +1,26 @@
+<div class="max-w 7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 md:grid-cols-12 gap-6">
+  <aside class="md:col-span-3 lg:col-span-3 card p-4">
+    <h2 class="text-lg font-semibold mb-3">Dashboard</h2>
+    <nav class="space-y-1">
+      @if (role() === 'mentee') { @for (item of menteeItems; track item.path) {
+      <a
+        [routerLink]="['/dashboard', 'mentee', item.path]"
+        routerLinkActive="bg-slate-100 text-gray-700"
+        class="block px-3 py-2 rounded-lg hover:bg-slate-50"
+        >{{ item.label }}</a
+      >
+      } } @else { @for (item of mentorItems; track item.path) {
+      <a
+        [routerLink]="['/dashboard', 'mentor', item.path]"
+        routerLinkActive="bg-slate-100 text-gray-700"
+        class="block px-3 py-2 rounded-lg hover:bg-slate-50"
+        >{{ item.label }}</a
+      >
+      } }
+    </nav>
+  </aside>
+
+  <section class="md:col-span-9 lg:col-span-9">
+    <router-outlet></router-outlet>
+  </section>
+</div>

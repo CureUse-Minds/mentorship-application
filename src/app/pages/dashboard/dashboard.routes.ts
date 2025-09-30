@@ -1,9 +1,6 @@
 import { Routes } from '@angular/router';
 import { Redirect } from './redirect/redirect';
 import { Dashboard } from './dashboard.component';
-import { Profile } from './components/profile/profile';
-import { Calendar } from './components/calendar/calendar';
-import { Messages } from './components/messages/messages';
 
 // ADD: routes for components specific to each user, eventually (i.e. mentee: goals/timeline, my mentors, session stats, mentor: mentee progress and request manager);
 export const dashboardRoutes: Routes = [
@@ -12,25 +9,29 @@ export const dashboardRoutes: Routes = [
     component: Redirect,
   },
   {
+    path: 'redirect',
+    loadComponent: () => import('./redirect/redirect').then((c) => c.Redirect),
+  },
+  {
     path: 'mentee',
     component: Dashboard,
     children: [
       {
-        path: '',
-        redirectTo: 'profile',
-        pathMatch: 'full',
-      },
-      {
         path: 'profile',
-        component: Profile,
+        loadComponent: () => import('./components/profile/profile').then((c) => c.Profile),
       },
       {
         path: 'calendar',
-        component: Calendar,
+        loadComponent: () => import('./components/calendar/calendar').then((c) => c.Calendar),
       },
       {
         path: 'messages',
-        component: Messages,
+        loadComponent: () => import('./components/messages/messages').then((c) => c.Messages),
+      },
+      {
+        path: '',
+        redirectTo: 'profile',
+        pathMatch: 'full',
       },
     ],
   },
@@ -39,21 +40,21 @@ export const dashboardRoutes: Routes = [
     component: Dashboard,
     children: [
       {
-        path: '',
-        redirectTo: 'profile',
-        pathMatch: 'full',
-      },
-      {
         path: 'profile',
-        component: Profile,
+        loadComponent: () => import('./components/profile/profile').then((c) => c.Profile),
       },
       {
         path: 'calendar',
-        component: Calendar,
+        loadComponent: () => import('./components/calendar/calendar').then((c) => c.Calendar),
       },
       {
         path: 'messages',
-        component: Messages,
+        loadComponent: () => import('./components/messages/messages').then((c) => c.Messages),
+      },
+      {
+        path: '',
+        redirectTo: 'profile',
+        pathMatch: 'full',
       },
     ],
   },

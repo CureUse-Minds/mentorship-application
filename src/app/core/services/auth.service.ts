@@ -1,9 +1,9 @@
 import { Injectable, inject } from '@angular/core';
 import { BehaviorSubject, Observable, from, of } from 'rxjs';
 import { map, switchMap, catchError } from 'rxjs/operators';
-import { 
-  Auth, 
-  signInWithEmailAndPassword, 
+import {
+  Auth,
+  signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signInWithPopup,
   GoogleAuthProvider,
@@ -13,20 +13,26 @@ import {
   updateProfile,
   sendEmailVerification,
   reload,
-  fetchSignInMethodsForEmail
+  fetchSignInMethodsForEmail,
 } from '@angular/fire/auth';
-import { LoginRequest, LoginResponse, RegisterRequest, RegisterResponse, User } from '../../shared/interfaces';
+import {
+  LoginRequest,
+  LoginResponse,
+  RegisterRequest,
+  RegisterResponse,
+  User,
+} from '../../shared/interfaces';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class AuthService {
   private auth = inject(Auth);
   private googleProvider = new GoogleAuthProvider();
-  
+
   private currentUserSubject = new BehaviorSubject<User | null>(null);
   public currentUser$ = this.currentUserSubject.asObservable();
-  
+
   private isAuthenticatedSubject = new BehaviorSubject<boolean>(false);
   public isAuthenticated$ = this.isAuthenticatedSubject.asObservable();
 
@@ -42,9 +48,10 @@ export class AuthService {
         }
 
         // Check if email is verified (Google users are automatically verified)
-        const isEmailVerified = firebaseUser.emailVerified || 
-          firebaseUser.providerData.some(provider => provider.providerId === 'google.com');
-        
+        const isEmailVerified =
+          firebaseUser.emailVerified ||
+          firebaseUser.providerData.some((provider) => provider.providerId === 'google.com');
+
         // Always create user object but only set as authenticated if verified
         const user: User = {
           id: firebaseUser.uid,
@@ -55,9 +62,9 @@ export class AuthService {
           profilePicture: firebaseUser.photoURL || undefined,
           bio: undefined,
           createdAt: new Date(firebaseUser.metadata.creationTime || Date.now()),
-          updatedAt: new Date()
+          updatedAt: new Date(),
         };
-        
+
         this.currentUserSubject.next(user);
         this.isAuthenticatedSubject.next(isEmailVerified);
       } else {
@@ -69,7 +76,9 @@ export class AuthService {
 
   // Email/Password Login
   login(credentials: LoginRequest): Observable<LoginResponse> {
-    return from(signInWithEmailAndPassword(this.auth, credentials.email, credentials.password)).pipe(
+    return from(
+      signInWithEmailAndPassword(this.auth, credentials.email, credentials.password)
+    ).pipe(
       switchMap((userCredential) => {
         // Check if email is verified
         if (!userCredential.user.emailVerified) {
@@ -77,10 +86,11 @@ export class AuthService {
           signOut(this.auth);
           return of({
             success: false,
-            message: 'Please verify your email before signing in. Check your inbox for a verification email.'
+            message:
+              'Please verify your email before signing in. Check your inbox for a verification email.',
           });
         }
-        
+
         return of({
           success: true,
           message: 'Login successful',
@@ -89,8 +99,8 @@ export class AuthService {
             email: userCredential.user.email || '',
             firstName: userCredential.user.displayName?.split(' ')[0] || '',
             lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
-            role: 'mentee' as const
-          }
+            role: 'mentee' as const,
+          },
         });
       }),
       catchError((error) => {
@@ -117,7 +127,7 @@ export class AuthService {
         }
         return of({
           success: false,
-          message: errorMessage
+          message: errorMessage,
         });
       })
     );
@@ -136,8 +146,8 @@ export class AuthService {
             email: userCredential.user.email || '',
             firstName: userCredential.user.displayName?.split(' ')[0] || '',
             lastName: userCredential.user.displayName?.split(' ').slice(1).join(' ') || '',
-            role: 'mentee' as const
-          }
+            role: 'mentee' as const,
+          },
         };
       }),
       catchError((error) => {
@@ -150,7 +160,8 @@ export class AuthService {
             errorMessage = 'Sign-in was cancelled';
             break;
           case 'auth/account-exists-with-different-credential':
-            errorMessage = 'An account already exists with this email using a different sign-in method';
+            errorMessage =
+              'An account already exists with this email using a different sign-in method';
             break;
           case 'auth/popup-blocked':
             errorMessage = 'Sign-in popup was blocked by your browser';
@@ -158,7 +169,7 @@ export class AuthService {
         }
         return of({
           success: false,
-          message: errorMessage
+          message: errorMessage,
         });
       })
     );
@@ -172,12 +183,14 @@ export class AuthService {
         if (signInMethods.length > 0) {
           return of({
             success: false,
-            message: 'An account with this email already exists. Please sign in instead.'
+            message: 'An account with this email already exists. Please sign in instead.',
           });
         }
 
         // Proceed with registration if email is not taken
-        return from(createUserWithEmailAndPassword(this.auth, userData.email, userData.password)).pipe(
+        return from(
+          createUserWithEmailAndPassword(this.auth, userData.email, userData.password)
+        ).pipe(
           switchMap((userCredential) => {
             // Update the user's display name
             const displayName = `${userData.firstName} ${userData.lastName}`;
@@ -191,14 +204,15 @@ export class AuthService {
                 signOut(this.auth);
                 return {
                   success: true,
-                  message: 'Registration successful! Please check your email and verify your account before signing in.',
+                  message:
+                    'Registration successful! Please check your email and verify your account before signing in.',
                   user: {
                     id: userCredential.user.uid,
                     email: userCredential.user.email || '',
                     firstName: userData.firstName,
                     lastName: userData.lastName,
-                    role: userData.role
-                  }
+                    role: userData.role,
+                  },
                 };
               })
             );
@@ -223,7 +237,7 @@ export class AuthService {
         }
         return of({
           success: false,
-          message: errorMessage
+          message: errorMessage,
         });
       })
     );
@@ -231,14 +245,32 @@ export class AuthService {
 
   // Logout
   logout(): Observable<boolean> {
+    console.log('AUTHSERVICE: logout() called');
+
+    // clearning the local state immediatedly
+    this.currentUserSubject.next(null);
+    this.isAuthenticatedSubject.next(false);
+    console.log('AUTHSERVICE: Local state cleared');
+
+    // then signout from Firebase
     return from(signOut(this.auth)).pipe(
       map(() => {
-        this.currentUserSubject.next(null);
-        this.isAuthenticatedSubject.next(false);
+        console.log('AUTHSERVICE: Firebase signOut completed');
         return true;
       }),
-      catchError(() => of(false))
+      catchError((error) => {
+        console.log('AUTHSERVICE: logout error', error);
+        return of(false);
+      })
     );
+    // return from(signOut(this.auth)).pipe(
+    //   map(() => {
+    //     this.currentUserSubject.next(null);
+    //     this.isAuthenticatedSubject.next(false);
+    //     return true;
+    //   }),
+    //   catchError(() => of(false))
+    // );
   }
 
   // Get current user
@@ -257,32 +289,33 @@ export class AuthService {
     if (!currentUser) {
       return of({
         success: false,
-        message: 'No user is currently signed in'
+        message: 'No user is currently signed in',
       });
     }
 
     if (currentUser.emailVerified) {
       return of({
         success: false,
-        message: 'Email is already verified'
+        message: 'Email is already verified',
       });
     }
 
     return from(sendEmailVerification(currentUser)).pipe(
       map(() => ({
         success: true,
-        message: 'Verification email sent successfully'
+        message: 'Verification email sent successfully',
       })),
       catchError((error) => {
         let errorMessage = 'Failed to send verification email';
         switch (error.code) {
           case 'auth/too-many-requests':
-            errorMessage = 'Too many requests. Please wait before requesting another verification email';
+            errorMessage =
+              'Too many requests. Please wait before requesting another verification email';
             break;
         }
         return of({
           success: false,
-          message: errorMessage
+          message: errorMessage,
         });
       })
     );
@@ -306,8 +339,10 @@ export class AuthService {
     return from(reload(currentUser)).pipe(
       map(() => {
         // Force re-evaluation by manually triggering the auth state listener
-        const isEmailVerified = currentUser.emailVerified || currentUser.providerData.some(provider => provider.providerId === 'google.com');
-        
+        const isEmailVerified =
+          currentUser.emailVerified ||
+          currentUser.providerData.some((provider) => provider.providerId === 'google.com');
+
         if (isEmailVerified) {
           const user: User = {
             id: currentUser.uid,
@@ -318,7 +353,7 @@ export class AuthService {
             profilePicture: currentUser.photoURL || undefined,
             bio: undefined,
             createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           };
           this.currentUserSubject.next(user);
           this.isAuthenticatedSubject.next(true);
@@ -359,11 +394,11 @@ export class AuthService {
             profilePicture: currentUser.photoURL || undefined,
             bio: undefined,
             createdAt: new Date(currentUser.metadata.creationTime || Date.now()),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           };
           this.currentUserSubject.next(user);
           this.isAuthenticatedSubject.next(true);
-          
+
           return { verified: true, message: 'Email verified successfully!' };
         } else {
           return { verified: false, message: 'Email is not yet verified' };

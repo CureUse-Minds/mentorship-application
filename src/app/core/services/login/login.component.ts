@@ -9,7 +9,7 @@ import { LoginRequest } from '../../../shared/interfaces';
   selector: 'app-login',
   imports: [ReactiveFormsModule, CommonModule, RouterModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrl: './login.component.css',
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
@@ -24,12 +24,16 @@ export class LoginComponent {
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
 
-  get email() { return this.loginForm.get('email'); }
-  get password() { return this.loginForm.get('password'); }
+  get email() {
+    return this.loginForm.get('email');
+  }
+  get password() {
+    return this.loginForm.get('password');
+  }
 
   async onSubmit() {
     if (this.loginForm.valid) {
@@ -38,14 +42,18 @@ export class LoginComponent {
 
       const loginData: LoginRequest = {
         email: this.loginForm.value.email,
-        password: this.loginForm.value.password
+        password: this.loginForm.value.password,
       };
 
       this.authService.login(loginData).subscribe({
         next: (response) => {
           if (response.success) {
             // Redirect based on user role or to dashboard
-            this.router.navigate(['/dashboard']);
+            console.log('Login successful, waiting for auth state...');
+
+            setTimeout(() => {
+              this.router.navigate(['/dashboard']);
+            }, 500);
           } else {
             this.errorMessage = response.message || 'Login failed';
             // If error is about email verification, show link to resend
@@ -59,7 +67,7 @@ export class LoginComponent {
           this.errorMessage = 'An error occurred during login';
           console.error('Login error:', error);
           this.isLoading = false;
-        }
+        },
       });
     } else {
       this.markFormGroupTouched();
@@ -67,7 +75,7 @@ export class LoginComponent {
   }
 
   private markFormGroupTouched() {
-    Object.keys(this.loginForm.controls).forEach(key => {
+    Object.keys(this.loginForm.controls).forEach((key) => {
       const control = this.loginForm.get(key);
       control?.markAsTouched();
     });
@@ -94,7 +102,7 @@ export class LoginComponent {
         this.errorMessage = 'Google sign-in failed';
         console.error('Google sign-in error:', error);
         this.isLoading = false;
-      }
+      },
     });
   }
 }

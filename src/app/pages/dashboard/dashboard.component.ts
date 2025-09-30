@@ -1,18 +1,31 @@
-import { Component, inject, computed } from '@angular/core';
-import { RouterOutlet, RouterLink, RouterLinkActive } from '@angular/router';
+import { Component, inject, computed, signal, OnInit } from '@angular/core';
+import { RouterOutlet, RouterLink, RouterLinkActive, Router } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-dashboard',
-  imports: [RouterLink, RouterLinkActive, RouterOutlet],
+  imports: [RouterOutlet, RouterLink, RouterLinkActive],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.css',
 })
-export class Dashboard {
+export class Dashboard implements OnInit {
   private auth = inject(AuthService);
-  role = computed(() => this.auth.getCurrentUser()?.role ?? 'mentee');
+  private router = inject(Router);
 
-  // additional paths will be added along the process specific to each role
+  public userRole = signal<'mentor' | 'mentee' | 'admin'>('mentee');
+  public role = computed(() => this.userRole());
+
+  ngOnInit() {
+    this.auth.currentUser$.subscribe((user) => {
+      console.log('DASHBOARD: User received:', user);
+      if (user) {
+        this.userRole.set(user.role || 'mentee');
+      } else {
+        this.router.navigate(['/login']);
+      }
+    });
+  }
+
   menteeItems = [
     {
       path: 'profile',

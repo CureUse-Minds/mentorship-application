@@ -29,7 +29,8 @@ export const routes: Routes = [
   },
   {
     path: 'dashboard',
-    loadChildren: () => import('./pages/dashboard/dashboard.routes').then((c) => c.dashboardRoutes),
+    loadChildren: () =>
+      import('./pages/dashboard/dashboard.routes').then((routes) => routes.dashboardRoutes),
     canActivate: [AuthGuard],
   },
   { path: '**', redirectTo: '' },

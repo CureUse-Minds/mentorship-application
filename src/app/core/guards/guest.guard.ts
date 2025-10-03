@@ -1,10 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
-import { Observable, map } from 'rxjs';
+import { Observable, map, take } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
 @Injectable({
-  providedIn: 'root'
+  providedIn: 'root',
 })
 export class GuestGuard implements CanActivate {
   private authService = inject(AuthService);
@@ -12,7 +12,8 @@ export class GuestGuard implements CanActivate {
 
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.isAuthenticated$.pipe(
-      map(isAuthenticated => {
+      take(1),
+      map((isAuthenticated) => {
         if (!isAuthenticated) {
           return true;
         } else {

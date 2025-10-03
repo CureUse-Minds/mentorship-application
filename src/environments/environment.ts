@@ -1,12 +1,12 @@
 export const environment = {
   production: false,
   firebaseConfig: {
-    apiKey: 'AIzaSyDX7z8qId6UuF6et6WKZjpHs9e6t53F4xo',
-    authDomain: 'mentorship-application-749e6.firebaseapp.com',
-    projectId: 'mentorship-application-749e6',
-    storageBucket: 'mentorship-application-749e6.firebasestorage.app',
-    messagingSenderId: '834951469188',
-    appId: '1:834951469188:web:f1b1ad1ff56a824aeecad1',
-    measurementId: 'G-SX1ST28ERR',
+    apiKey: 'AIzaSyBcTMWDws60YTNp8Dv-h90RGXdgmSUP9QU',
+    authDomain: 'mentorship-app-angular.firebaseapp.com',
+    projectId: 'mentorship-app-angular',
+    storageBucket: 'mentorship-app-angular.firebasestorage.app',
+    messagingSenderId: '510740484701',
+    appId: '1:510740484701:web:81ae056c2486e11aedb3b4',
+    measurementId: 'G-08K2DSE23K',
   },
 };

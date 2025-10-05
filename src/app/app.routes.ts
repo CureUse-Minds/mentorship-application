@@ -1,6 +1,7 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 import { GuestGuard } from './core/guards/guest.guard';
+import { RoleGuard } from './core/guards/role.guard';
 
 export const routes: Routes = [
   { path: '', redirectTo: '/home', pathMatch: 'full' },
@@ -34,5 +35,57 @@ export const routes: Routes = [
       import('./pages/dashboard/dashboard.component').then((c) => c.DashboardComponent),
     canActivate: [AuthGuard],
   },
-  { path: '**', redirectTo: '' },
+  {
+    path: 'mentor/:id',
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['mentor'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/mentor/mentor-dashboard/mentor-dashboard.component').then(
+            (c) => c.MentorDashboard
+          ),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/mentor/mentor-profile/mentor-profile.component').then(
+            (c) => c.MentorProfile
+          ),
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+    ],
+  },
+  {
+    path: 'mentee/:id',
+    canActivate: [AuthGuard, RoleGuard],
+    data: { roles: ['mentee'] },
+    children: [
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/mentee/mentee-dashboard/mentee-dashboard.component').then(
+            (c) => c.MenteeDashboard
+          ),
+      },
+      {
+        path: 'profile',
+        loadComponent: () =>
+          import('./pages/mentee/mentee-profile/mentee-profile.component').then(
+            (c) => c.MenteeProfile
+          ),
+      },
+      {
+        path: '',
+        redirectTo: 'dashboard',
+        pathMatch: 'full',
+      },
+    ],
+  },
+  { path: '**', redirectTo: '/dashboard' },
 ];

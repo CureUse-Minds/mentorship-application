@@ -1,59 +1,53 @@
 import { Injectable, inject } from '@angular/core';
 import { CanActivate, Router, UrlTree } from '@angular/router';
-import { Observable, map, take, combineLatest } from 'rxjs';
+import { Observable, map, take, combineLatest, switchMap, of } from 'rxjs';
 import { AuthService } from '../services/auth.service';
+import { ProfileService } from '../services/profile.service';
 
 @Injectable({
   providedIn: 'root',
 })
 export class AuthGuard implements CanActivate {
   private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
   private router = inject(Router);
 
   canActivate(): Observable<boolean | UrlTree> {
     // combine both user and verification status
+    console.log('Authguard checking access');
+
+    // combine both user and verification status
     return combineLatest([this.authService.user$, this.authService.isEmailVerified$]).pipe(
       take(1), //take only 1 current value
-      map(([user, isVerified]) => {
+      switchMap(([user, isVerified]) => {
+        console.log('AUTHGUARD: user:', user);
+        console.log('email is verified:', isVerified);
+
         if (!user) {
           // no user logged in - redirect to login
-          return this.router.createUrlTree(['/login']);
+          return of(this.router.createUrlTree(['/login']));
         }
 
-        if (isVerified) {
-          // user is verified - allow access
-          return true;
-        } else {
-          // user exists but email not verified - redirect to verification page
-          return this.router.createUrlTree(['/verify-email']);
+        if (!isVerified) {
+          // uesr exist but email not verified, redirect verification page
+          return of(this.router.createUrlTree(['/verify-email']));
         }
+
+        // user is verified - fetch actual profile to check role
+        return this.profileService.getProfile(user.id).pipe(
+          map((profile) => {
+            console.log('authguraed: profile fetched:', profile);
+
+            if (!profile) {
+              console.log('authguard: no profile found, allowing access');
+              return true; //allow access dashboard will create profile
+            }
+
+            console.log('profile exist with role:', profile.role);
+            return true; // allow access user is authenticated and verified
+          })
+        );
       })
     );
   }
-  // private authService = inject(AuthService);
-  // private router = inject(Router);
-  // private auth = inject(Auth);
-
-  // canActivate(): Observable<boolean | UrlTree> {
-  //   return user(this.auth).pipe(
-  //     switchMap(firebaseUser => {
-  //       if (!firebaseUser) {
-  //         // No user logged in - redirect to login
-  //         return of(this.router.createUrlTree(['/login']));
-  //       }
-
-  //       // Check if email is verified (Google users are automatically verified)
-  //       const isEmailVerified = firebaseUser.emailVerified ||
-  //         firebaseUser.providerData.some(provider => provider.providerId === 'google.com');
-
-  //       if (isEmailVerified) {
-  //         // User is verified - allow access
-  //         return of(true);
-  //       } else {
-  //         // User exists but email not verified - redirect to verification page
-  //         return of(this.router.createUrlTree(['/verify-email']));
-  //       }
-  //     })
-  //   );
-  // }
 }

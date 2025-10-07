@@ -12,7 +12,7 @@ export class GuestGuard implements CanActivate {
 
   canActivate(): Observable<boolean | UrlTree> {
     return this.authService.isAuthenticated$.pipe(
-      take(1),
+      take(1), // take only the current value to avoid multiple emissions
       map((isAuthenticated) => {
         if (!isAuthenticated) {
           return true;

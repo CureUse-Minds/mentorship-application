@@ -1,3 +1,4 @@
+import { ProfileService } from './../profile.service';
 import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
@@ -15,6 +16,7 @@ export class LoginComponent {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
 
   loginForm: FormGroup;
   isLoading = signal(false);
@@ -49,8 +51,8 @@ export class LoginComponent {
       this.authService.login(loginData).subscribe({
         next: (response) => {
           if (response.success) {
+            console.log('Login successful, navigating to dashboard');
             // navigation will be handled by AuthGuard automatically
-            // just navigate to dashboard and let the guard handle verification check
             // Redirect based on user role or to dashboard
             this.router.navigate(['/dashboard']);
           } else {
@@ -90,12 +92,48 @@ export class LoginComponent {
 
     this.authService.signInWithGoogle().subscribe({
       next: (response) => {
-        if (response.success) {
-          this.router.navigate(['/dashboard']);
+        if (response.success && response.user) {
+          console.log('Google signin successful');
+
+          this.profileService.profileExists(response.user.id).subscribe({
+            next: (exists) => {
+              if (!exists) {
+                console.log('creating profile for google user');
+                const profileData = {
+                  id: response.user!.id || '',
+                  email: response.user!.email || '',
+                  firstName: response.user!.firstName || '',
+                  lastName: response.user!.lastName || '',
+                  role: 'mentee' as const, // default for google signin
+                  profilePicture: response.user!.profilePicture,
+                };
+
+                this.profileService.initializeProfile(profileData).subscribe({
+                  next: () => {
+                    console.log('profile created for google user');
+                    this.router.navigate(['/dashboard']);
+                  },
+                  error: (error) => {
+                    console.error('error profile', error);
+                    this.router.navigate(['/dashboard']);
+                  },
+                });
+              } else {
+                console.log('profile exists, navigating to dashboard');
+                this.router.navigate(['/dashboard']);
+              }
+              this.isLoading.set(false);
+            },
+            error: (error) => {
+              console.error('error checking profile', error);
+              this.router.navigate(['/dashboard']);
+              this.isLoading.set(false);
+            },
+          });
         } else {
           this.errorMessage.set(response.message || 'Google sign-in failed');
+          this.isLoading.set(false);
         }
-        this.isLoading.set(false);
       },
       error: (error) => {
         this.errorMessage.set('Google sign-in failed');

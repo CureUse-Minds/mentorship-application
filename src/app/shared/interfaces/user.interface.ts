@@ -7,7 +7,7 @@ export interface User {
   role: UserRole;
   profilePicture?: string;
   bio?: string;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
   emailVerified?: boolean;
 }

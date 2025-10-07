@@ -1,3 +1,4 @@
+import { ProfileService } from './../profile.service';
 import { Component, inject, signal } from '@angular/core';
 import {
   FormBuilder,
@@ -21,6 +22,7 @@ export class RegisterComponent {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
 
   registerForm: FormGroup;
   isLoading = signal(false);
@@ -95,9 +97,29 @@ export class RegisterComponent {
 
       this.authService.register(registerData).subscribe({
         next: (response) => {
-          if (response.success) {
-            // Redirect to verification page after successful registration
-            this.router.navigate(['/verify-email']);
+          if (response.success && response.user) {
+            // after successful registration, create the Firestore profile
+            const profileData = {
+              id: response.user.id,
+              email: response.user.email,
+              firstName: response.user.firstName,
+              lastName: response.user.lastName,
+              role: response.user.role,
+            };
+
+            // Initialize profile in Firestore with the selected role
+            this.profileService.initializeProfile(profileData).subscribe({
+              next: () => {
+                console.log('Profile initialized with role:', response.user?.role);
+                // redirect to verification page after successful registration
+                this.router.navigate(['/verify-email']);
+              },
+              error: (error) => {
+                console.log('Error initializing profile:', error);
+                // still redirect to verification even if profile creation fails
+                this.router.navigate(['/verify-email']);
+              },
+            });
           } else {
             this.errorMessage.set(response.message || 'Registration failed');
           }
@@ -127,9 +149,38 @@ export class RegisterComponent {
 
     this.authService.signInWithGoogle().subscribe({
       next: (response) => {
-        if (response.success) {
-          // Redirect to dashboard after successful Google sign-up
-          this.router.navigate(['/dashboard']);
+        if (response.success && response.user) {
+          // check if profile exists, if not create one
+          this.profileService.profileExists(response.user.id).subscribe({
+            next: (exists) => {
+              if (!exists) {
+                // profile doesnt exist, create it with default mentee role
+                // user can change role later in settings if needed (kung kaya pa ng powers ang settings shinanegan)
+                const profileData = {
+                  id: response.user!.id,
+                  email: response.user!.email,
+                  firstName: response.user!.firstName,
+                  lastName: response.user!.lastName,
+                  role: 'mentee' as const, //default for google sign-up
+                  profilePicture: response.user!.profilePicture,
+                };
+
+                this.profileService.initializeProfile(profileData).subscribe({
+                  next: () => {
+                    console.log('Google profile initialized');
+                    this.router.navigate(['/dashboard']);
+                  },
+                  error: (error) => {
+                    console.error('Error initializing profile', error);
+                    this.router.navigate(['/dashboard']);
+                  },
+                });
+              } else {
+                // Redirect to dashboard after successful Google sign-up
+                this.router.navigate(['/dashboard']);
+              }
+            },
+          });
         } else {
           this.errorMessage.set(response.message || 'Google sign-up failed');
         }

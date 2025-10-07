@@ -2,8 +2,8 @@ export type SessionStatus = 'scheduled' | 'in-progress' | 'completed' | 'cancell
 
 export interface MentorshipSession {
   id: string;
-  mentorID: string;
-  menteeID: string;
+  mentorId: string;
+  menteeId: string;
   mentorName: string;
   menteeName: string;
   scheduledDate: Date;

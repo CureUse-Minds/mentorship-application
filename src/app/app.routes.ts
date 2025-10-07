@@ -25,6 +25,12 @@ export const routes: Routes = [
       ),
   },
   {
+    path: 'calendar',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/calendar/calendar.component').then((c) => c.CalendarComponent),
+  },
+  {
     path: 'home',
     loadComponent: () =>
       import('./shared/components/home/home.component').then((c) => c.HomeComponent),
@@ -86,6 +92,48 @@ export const routes: Routes = [
         pathMatch: 'full',
       },
     ],
+  },
+  {
+    path: 'sessions',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/sessions/sessions.component').then((c) => c.SessionsComponent),
+  },
+  {
+    path: 'goals',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/goals/goals.component').then((c) => c.GoalsComponent),
+  },
+  {
+    path: 'messages',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/messages/messages.component').then((c) => c.MessagesComponent),
+  },
+  {
+    path: 'progress',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/progress/progress.component').then((c) => c.ProgressComponent),
+  },
+  {
+    path: 'resources',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/resources/resources.component').then((c) => c.ResourcesComponent),
+  },
+  {
+    path: 'profile',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/profile/profile.component').then((c) => c.ProfileComponent),
+  },
+  {
+    path: 'settings',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/settings/settings.component').then((c) => c.SettingsComponent),
   },
   { path: '**', redirectTo: '/dashboard' },
 ];

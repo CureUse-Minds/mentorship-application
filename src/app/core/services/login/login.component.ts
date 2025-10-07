@@ -5,6 +5,7 @@ import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../auth.service';
 import { LoginRequest } from '../../../shared/interfaces';
+import { filter, take } from 'rxjs/operators';
 
 @Component({
   selector: 'app-login',
@@ -38,41 +39,60 @@ export class LoginComponent {
   }
 
   onSubmit() {
-    if (this.loginForm.valid) {
-      this.isLoading.set(true);
-      this.errorMessage.set('');
-      this.showVerificationLink.set(false);
-
-      const loginData: LoginRequest = {
-        email: this.loginForm.value.email,
-        password: this.loginForm.value.password,
-      };
-
-      this.authService.login(loginData).subscribe({
-        next: (response) => {
-          if (response.success) {
-            console.log('Login successful, navigating to dashboard');
-            // navigation will be handled by AuthGuard automatically
-            // Redirect based on user role or to dashboard
-            this.router.navigate(['/dashboard']);
-          } else {
-            this.errorMessage.set(response.message || 'Login failed');
-            // If error is about email verification, show link to resend
-            if (response.message?.includes('verify your email')) {
-              this.showVerificationLink.set(true);
-            }
-          }
-          this.isLoading.set(false);
-        },
-        error: (error) => {
-          this.errorMessage.set('An error occurred during login');
-          console.error('Login error:', error);
-          this.isLoading.set(false);
-        },
-      });
-    } else {
-      this.markFormGroupTouched();
+    // Prevent double submission
+    if (this.isLoading() || !this.loginForm.valid) {
+      if (!this.loginForm.valid) {
+        this.markFormGroupTouched();
+      }
+      return;
     }
+
+    this.isLoading.set(true);
+    this.errorMessage.set('');
+    this.showVerificationLink.set(false);
+
+    const loginData: LoginRequest = {
+      email: this.loginForm.value.email,
+      password: this.loginForm.value.password,
+    };
+
+    this.authService.login(loginData).subscribe({
+      next: (response) => {
+        if (response.success) {
+          console.log('Login successful, waiting for auth state update');
+          // Wait for auth state to update, then navigate
+          this.authService.isAuthenticated$.pipe(
+            filter((isAuth: boolean) => isAuth === true),
+            take(1)
+          ).subscribe(() => {
+            console.log('Auth state updated, navigating to dashboard');
+            this.isLoading.set(false);
+            this.router.navigate(['/dashboard']);
+          });
+
+          // Fallback navigation after 2 seconds if auth state doesn't update
+          setTimeout(() => {
+            if (this.isLoading()) {
+              console.log('Fallback navigation after timeout');
+              this.isLoading.set(false);
+              this.router.navigate(['/dashboard']);
+            }
+          }, 2000);
+        } else {
+          this.isLoading.set(false);
+          this.errorMessage.set(response.message || 'Login failed');
+          // If error is about email verification, show link to resend
+          if (response.message?.includes('verify your email')) {
+            this.showVerificationLink.set(true);
+          }
+        }
+      },
+      error: (error) => {
+        this.isLoading.set(false);
+        this.errorMessage.set('An error occurred during login');
+        console.error('Login error:', error);
+      },
+    });
   }
 
   private markFormGroupTouched() {

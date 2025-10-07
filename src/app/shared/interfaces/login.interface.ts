@@ -12,6 +12,7 @@ export interface LoginResponse {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'mentor' | 'mentee' | 'admin';
+    role: 'mentor' | 'mentee';
+    profilePicture?: string;
   };
 }

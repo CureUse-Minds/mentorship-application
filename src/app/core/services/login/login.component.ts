@@ -1,4 +1,5 @@
-import { Component, inject } from '@angular/core';
+import { ProfileService } from './../profile.service';
+import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -9,57 +10,65 @@ import { LoginRequest } from '../../../shared/interfaces';
   selector: 'app-login',
   imports: [ReactiveFormsModule, CommonModule, RouterModule],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css'
+  styleUrl: './login.component.css',
 })
 export class LoginComponent {
   private fb = inject(FormBuilder);
   private router = inject(Router);
   private authService = inject(AuthService);
+  private profileService = inject(ProfileService);
 
   loginForm: FormGroup;
-  isLoading = false;
-  errorMessage = '';
-  showVerificationLink = false;
+  isLoading = signal(false);
+  errorMessage = signal('');
+  showVerificationLink = signal(false);
 
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
-      password: ['', [Validators.required, Validators.minLength(6)]]
+      password: ['', [Validators.required, Validators.minLength(6)]],
     });
   }
 
-  get email() { return this.loginForm.get('email'); }
-  get password() { return this.loginForm.get('password'); }
+  get email() {
+    return this.loginForm.get('email');
+  }
+  get password() {
+    return this.loginForm.get('password');
+  }
 
-  async onSubmit() {
+  onSubmit() {
     if (this.loginForm.valid) {
-      this.isLoading = true;
-      this.errorMessage = '';
+      this.isLoading.set(true);
+      this.errorMessage.set('');
+      this.showVerificationLink.set(false);
 
       const loginData: LoginRequest = {
         email: this.loginForm.value.email,
-        password: this.loginForm.value.password
+        password: this.loginForm.value.password,
       };
 
       this.authService.login(loginData).subscribe({
         next: (response) => {
           if (response.success) {
+            console.log('Login successful, navigating to dashboard');
+            // navigation will be handled by AuthGuard automatically
             // Redirect based on user role or to dashboard
             this.router.navigate(['/dashboard']);
           } else {
-            this.errorMessage = response.message || 'Login failed';
+            this.errorMessage.set(response.message || 'Login failed');
             // If error is about email verification, show link to resend
             if (response.message?.includes('verify your email')) {
-              this.showVerificationLink = true;
+              this.showVerificationLink.set(true);
             }
           }
-          this.isLoading = false;
+          this.isLoading.set(false);
         },
         error: (error) => {
-          this.errorMessage = 'An error occurred during login';
+          this.errorMessage.set('An error occurred during login');
           console.error('Login error:', error);
-          this.isLoading = false;
-        }
+          this.isLoading.set(false);
+        },
       });
     } else {
       this.markFormGroupTouched();
@@ -67,7 +76,7 @@ export class LoginComponent {
   }
 
   private markFormGroupTouched() {
-    Object.keys(this.loginForm.controls).forEach(key => {
+    Object.keys(this.loginForm.controls).forEach((key) => {
       const control = this.loginForm.get(key);
       control?.markAsTouched();
     });
@@ -78,23 +87,59 @@ export class LoginComponent {
   }
 
   onGoogleSignIn() {
-    this.isLoading = true;
-    this.errorMessage = '';
+    this.isLoading.set(true);
+    this.errorMessage.set('');
 
     this.authService.signInWithGoogle().subscribe({
       next: (response) => {
-        if (response.success) {
-          this.router.navigate(['/dashboard']);
+        if (response.success && response.user) {
+          console.log('Google signin successful');
+
+          this.profileService.profileExists(response.user.id).subscribe({
+            next: (exists) => {
+              if (!exists) {
+                console.log('creating profile for google user');
+                const profileData = {
+                  id: response.user!.id || '',
+                  email: response.user!.email || '',
+                  firstName: response.user!.firstName || '',
+                  lastName: response.user!.lastName || '',
+                  role: 'mentee' as const, // default for google signin
+                  profilePicture: response.user!.profilePicture,
+                };
+
+                this.profileService.initializeProfile(profileData).subscribe({
+                  next: () => {
+                    console.log('profile created for google user');
+                    this.router.navigate(['/dashboard']);
+                  },
+                  error: (error) => {
+                    console.error('error profile', error);
+                    this.router.navigate(['/dashboard']);
+                  },
+                });
+              } else {
+                console.log('profile exists, navigating to dashboard');
+                this.router.navigate(['/dashboard']);
+              }
+              this.isLoading.set(false);
+            },
+            error: (error) => {
+              console.error('error checking profile', error);
+              this.router.navigate(['/dashboard']);
+              this.isLoading.set(false);
+            },
+          });
         } else {
-          this.errorMessage = response.message || 'Google sign-in failed';
+          this.errorMessage.set(response.message || 'Google sign-in failed');
+          this.isLoading.set(false);
         }
-        this.isLoading = false;
       },
       error: (error) => {
-        this.errorMessage = 'Google sign-in failed';
+        this.errorMessage.set('Google sign-in failed');
         console.error('Google sign-in error:', error);
-        this.isLoading = false;
-      }
+        this.isLoading.set(false);
+      },
     });
   }
 }

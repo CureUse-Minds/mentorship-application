@@ -1,0 +1,428 @@
+<div class="p-6">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold text-gray-900">Profile Management</h1>
+    <p class="text-gray-600">Manage your profile information</p>
+  </div>
+
+  @if (isLoading()) {
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+    <div class="animate-spin rounded-full h-12 w-12 border-b-4 border-brand-blue mx-autp"></div>
+    <p class="mt-f text-gray-600">Loading Profile...</p>
+  </div>
+  } @if (!isLoading() && profile()) {
+  <div class="space-y-6">
+    @if (successMessage()) {
+    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+      <div class="flex items-center">
+        <svg
+          class="h-5 w-5 text-green-500 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M5 13l4 4L19 7"
+          ></path>
+        </svg>
+        <p class="text-green-800">{{ successMessage() }}</p>
+      </div>
+    </div>
+    } @if (errorMessage()) {
+    <div class="bg-red-50 border-red-200 rounded-lg p-4">
+      <div class="flex items-center">
+        <svg
+          class="h-5 w-5 text-red-500 mr-2"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+        <p class="text-red-800">{{ errorMessage() }}</p>
+      </div>
+    </div>
+    }
+
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+      <div class="bg-gradient-to-r from-brand-blue to-blue-600 h-32"></div>
+      <div class="px-6 pb-6">
+        <div class="flex items-end -mt-16 mb-4">
+          <div class="relative">
+            @if(profile()!.profilePicture){
+            <img
+              [src]="profile()!.profilePicture"
+              alt="Profile"
+              class="w-22 h-22 rounded-full border-4 border-white shadow-lg object-cover"
+            />
+            } @else {
+            <div
+              class="w-22 h-22 rounded-full border-4 border-white shadow-lg bg-brand-blue flex items-center justify-center text-white text-3xl font-bold tracking-tighter"
+            >
+              {{ profile()!.firstName.charAt(0) }} {{ profile()!.lastName.charAt(0) }}
+            </div>
+            }
+          </div>
+
+          <div class="ml-6 flex-1 p-0">
+            <h2 class="text-2xl font-bold text-gray-900">
+              {{ profile()!.firstName }} {{ profile()!.lastName }}
+            </h2>
+            <p class="text-gray-600 text-sm">{{ profile()!.email }}</p>
+            <span
+              class="inline-block mt-2 px-3 py-1 text-sm font-medium rounded-full bg-blue-100 text-blue-800"
+            >
+              {{ profile()!.role | titlecase }}
+            </span>
+          </div>
+
+          @if (!isEditMode()) {
+          <button
+            (click)="toggleEditMode()"
+            class="px-6 py-2 border bg-brand-blue text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+          >
+            Edit Profile
+          </button>
+          } @else {
+          <div class="">
+            <div class="flex justify-end space-x-4">
+              <button
+                type="button"
+                (click)="toggleEditMode()"
+                [disabled]="isSaving()"
+                class="px-6 py-2 border bg-brand-blue text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                [disabled]="profileForm.invalid || isSaving()"
+                class="px-6 py-2 border bg-brand-green text-white rounded-lg hover:bg-emerald-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+              >
+                @if (isSaving()) {
+                <svg
+                  class="animate-spin -ml-1 mr-2 h-5 w-5 text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                }
+                {{ isSaving() ? 'Saving...' : 'Save Changes' }}
+              </button>
+            </div>
+          </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="onSubmit()">
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h3 class="text-xl font-semibold text-brand-dark mb-6">Basic Information</h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <!-- first name -->
+          <div>
+            <label for="firstName" class="block text-sm font-medium text-gray-800 mb-2"
+              >First Name</label
+            >
+            <input
+              type="text"
+              formControlName="firstName"
+              [readOnly]="!isEditMode()"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              [ngClass]="{
+                'bg-gray-50 cursor-not-allowed': !isEditMode(),
+                'border-gray-300': !profileForm.get('firstName')?.invalid,
+                'border-red-500':
+                  profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched
+              }"
+            />
+
+            @if (profileForm.get('firstName')?.invalid && profileForm.get('firstName')?.touched) {
+            <p class="mt-1 text-sm text-red-600">First name is requred</p>
+            }
+          </div>
+
+          <!-- last name -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
+            <input
+              type="text"
+              formControlName="lastName"
+              [readonly]="!isEditMode()"
+              class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              [ngClass]="{
+                'bg-gray-50 cursor-not-allowed': !isEditMode(),
+                'border-gray-300': !profileForm.get('lastName')?.invalid,
+                'border-red-500':
+                  profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched
+              }"
+            />
+            @if (profileForm.get('lastName')?.invalid && profileForm.get('lastName')?.touched) {
+            <p class="mt-1 text-sm text-red-600"></p>
+            }
+          </div>
+
+          <!-- email (readonly cannot be changed) -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+            <input
+              type="email"
+              formControlName="email"
+              readonly
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+            />
+            <p class="mt-1 text-sm text-gray-500">Email cannot be changed</p>
+          </div>
+
+          <!-- Profile Picture URL -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Profile Picture URL</label>
+            <input
+              type="url"
+              formControlName="profilePicture"
+              [readonly]="!isEditMode()"
+              placeholder="https://example.com/photo.jpg"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              [ngClass]="{ 'bg-gray-50 cursor-not-allowed': !isEditMode() }"
+            />
+          </div>
+
+          <!-- bio -->
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+            <textarea
+              formControlName="bio"
+              [readonly]="!isEditMode()"
+              rows="4"
+              placeholder="Tell us about yourself..."
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors resize-none"
+              [ngClass]="{ 'bg-gray-50 cursor-not-allowed': !isEditMode() }"
+            ></textarea>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROLE SPECIFI FIELDS -->
+      <!-- MENTOR -->
+      @if (isMentor) {
+      <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Mentor Information</h3>
+
+        <div class="space-y-6">
+          <!-- years of experience -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Years of Experience</label>
+            <input
+              type="number"
+              formControlName="yearsOfExperience"
+              [readonly]="!isEditMode()"
+              min="0"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors"
+              [ngClass]="{ 'bg-gray-50 cursor-not-allowed': !isEditMode() }"
+            />
+          </div>
+
+          <!-- Statistics (Read-only) -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="bg-purple-50 rounded-lg p-4">
+              <p class="text-sm text-purple-600 font-medium">Total Mentees</p>
+              <p class="text-2xl font-bold text-purple-900">
+                {{ mentorProfile?.totalMentees || 0 }}
+              </p>
+            </div>
+            <div class="bg-purple-50 rounded-lg p-4">
+              <p class="text-sm text-purple-600 font-medium">Average Rating</p>
+              <p class="text-2xl font-bold text-purple-900">{{ mentorProfile?.rating || 0 }}/5</p>
+            </div>
+            <div class="bg-purple-50 rounded-lg p-4">
+              <p class="text-sm text-purple-600 font-medium">Expertise Areas</p>
+              <p class="text-2xl font-bold text-purple-900">
+                {{ mentorProfile?.expertise?.length || 0 }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      } @if (isMentee) {
+      <div class="g-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+        <h3 class="text-xl font-semibold text-gray-900 mb-6">Mentee Information</h3>
+
+        <div class="space-y-6">
+          <!-- Goals and Objectives -->
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-2">Goals and Objectives</label>
+            <textarea
+              formControlName="goalsAndObjectives"
+              [readonly]="!isEditMode()"
+              rows="4"
+              placeholder="What are your learning goals?"
+              class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent transition-colors resize-none"
+              [ngClass]="{ 'bg-gray-50 cursor-not-allowed': !isEditMode() }"
+            ></textarea>
+          </div>
+
+          <!-- Statistics (Read-only) -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-blue-50 rounded-lg p-4">
+              <p class="text-sm text-blue-600 font-medium">Completed Sessions</p>
+              <p class="text-2xl font-bold text-blue-900">
+                {{ menteeProfile?.completedSessions || 0 }}
+              </p>
+            </div>
+            <div class="bg-blue-50 rounded-lg p-4">
+              <p class="text-sm text-blue-600 font-medium">Current Mentor</p>
+              <p class="text-lg font-semibold text-blue-900">
+                {{ menteeProfile?.currentMentor ? 'Assigned' : 'Not Assigned' }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+      }
+    </form>
+
+    <!-- SKILLS SECTION -->
+    <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+      <h3 class="text-xl font-semibold text-gray-900 mb-4">Skills</h3>
+
+      <!-- Add Skill -->
+      <div class="flex gap-2 mb-4">
+        <input
+          type="text"
+          [value]="newSkill()"
+          (input)="newSkill.set($any($event.target).value)"
+          (keyup.enter)="addSkill()"
+          placeholder="Add a skill"
+          class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+        />
+        <button
+          (click)="addSkill()"
+          [disabled]="!newSkill().trim()"
+          class="px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Add
+        </button>
+      </div>
+
+      <!-- Skills List -->
+      <div class="flex flex-wrap gap-2">
+        @for (skill of profile()?.skills; track $index) {
+        <span
+          class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium"
+        >
+          {{ skill }}
+          <button
+            (click)="removeSkill(skill)"
+            class="ml-2 text-blue-600 hover:text-blue-800 focus:outline-none"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
+        </span>
+        } @if(profile()!.skills.length === 0){
+        <p class="text-gray-500 text-sm">No skills added yet</p>
+        }
+      </div>
+    </div>
+  </div>
+
+  @if (isMentee) {
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
+    <h3 class="text-xl font-semibold text-gray-900 mb-4">Interests</h3>
+
+    <!-- Add Interest -->
+    <div class="flex gap-2 mb-4">
+      <input
+        type="text"
+        [value]="newInterest()"
+        (input)="newInterest.set($any($event.target).value)"
+        (keyup.enter)="addInterest()"
+        placeholder="Add an interest"
+        class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-blue focus:border-transparent"
+      />
+      <button
+        (click)="addInterest()"
+        [disabled]="!newInterest().trim()"
+        class="px-4 py-2 bg-brand-blue text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
+        Add
+      </button>
+    </div>
+
+    <!-- Interests List -->
+    <div class="flex flex-wrap gap-2">
+      @for (interest of menteeProfile?.interests; track $index) {
+      <span
+        class="inline-flex items-center px-3 py-1 bg-indigo-100 text-indigo-800 rounded-full text-sm font-medium"
+      >
+        {{ interest }}
+        <button
+          (click)="removeInterest(interest)"
+          class="ml-2 text-indigo-600 hover:text-indigo-800 focus:outline-none"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            ></path>
+          </svg>
+        </button>
+      </span>
+      } @if (!menteeProfile?.interests || menteeProfile!.interests.length === 0) {
+      <p class="text-gray-500 text-sm">No interests added yet</p>
+      }
+    </div>
+  </div>
+  }
+
+  <!-- Account Information -->
+  <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+    <h3 class="text-xl font-semibold text-gray-900 mb-4">Account Information</h3>
+    <div class="space-y-3 text-sm text-gray-600">
+      <div class="flex justify-between">
+        <span class="font-medium">Account Created:</span>
+        <span>{{ toDate(profile()!.createdAt) | date : 'medium' }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-medium">Last Updated:</span>
+        <span>{{ toDate(profile()!.updatedAt) | date : 'medium' }}</span>
+      </div>
+      <div class="flex justify-between">
+        <span class="font-medium">User ID:</span>
+        <span class="font-mono text-xs">{{ profile()!.userId }}</span>
+      </div>
+    </div>
+  </div>
+
+  }
+</div>

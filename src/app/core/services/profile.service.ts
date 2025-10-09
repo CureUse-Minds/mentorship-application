@@ -1,7 +1,18 @@
 import { Injectable, inject } from '@angular/core';
 import { AuthService } from './auth.service';
 import { UserProfile, MentorProfile, MenteeProfile, User } from '../../shared/interfaces';
-import { doc, docData, Firestore, getDoc, setDoc, updateDoc } from '@angular/fire/firestore';
+import {
+  collection,
+  doc,
+  docData,
+  Firestore,
+  getDoc,
+  getDocs,
+  query,
+  setDoc,
+  updateDoc,
+  where,
+} from '@angular/fire/firestore';
 import { catchError, from, Observable, of, switchMap, take, throwError, map } from 'rxjs';
 import { prepareForFirestore, removeUndefined } from '../../shared/utils/firestore.helpers';
 @Injectable({
@@ -36,6 +47,21 @@ export class ProfileService {
     );
   }
 
+  getAllMentors(): Observable<MentorProfile[]> {
+    const profilesCollection = collection(this.firestore, 'profiles');
+    const q = query(profilesCollection, where('role', '==', 'mentor'));
+
+    return from(getDocs(q)).pipe(
+      map((querySnapshot) => {
+        const mentors: MentorProfile[] = [];
+        querySnapshot.forEach((doc) => {
+          mentors.push(doc.data() as MentorProfile);
+        });
+        return mentors;
+      })
+    );
+  }
+
   getCurrentUserProfile(): Observable<UserProfile | null> {
     return this.authService.user$.pipe(
       switchMap((user) => {
@@ -43,23 +69,6 @@ export class ProfileService {
           return of(null);
         }
         return this.getProfile(user.id);
-      })
-    );
-  }
-
-  // real-time profile updates
-  getProfileRealtime(userId: string): Observable<UserProfile | null> {
-    const profileRef = doc(this.firestore, `profiles/${userId}`);
-    return docData(profileRef) as Observable<UserProfile | null>;
-  }
-
-  getCurrentUserProfileRealtime(): Observable<UserProfile | null> {
-    return this.authService.user$.pipe(
-      switchMap((user) => {
-        if (!user) {
-          return of(null);
-        }
-        return this.getProfileRealtime(user.id);
       })
     );
   }

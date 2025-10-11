@@ -11,8 +11,10 @@ import {
   setDoc,
   updateDoc,
   where,
+  onSnapshot,
+  DocumentSnapshot,
 } from '@angular/fire/firestore';
-import { catchError, from, Observable, of, switchMap, take, throwError, map } from 'rxjs';
+import { catchError, from, Observable, of, switchMap, take, throwError, map, EMPTY } from 'rxjs';
 import { prepareForFirestore, removeUndefined } from '../../shared/utils/firestore.helpers';
 @Injectable({
   providedIn: 'root',
@@ -42,6 +44,49 @@ export class ProfileService {
         return of(null);
       })
     );
+  }
+
+  // ADDED: new method for real-time updates, will be used to sync changes made within profile management and sidebar.
+  getRealTimeProfile(userId: string): Observable<MentorProfile | null> {
+    console.log('Setting up real-time listener for profile:', userId);
+
+    return new Observable<MentorProfile | null>((subscriber) => {
+      try {
+        const profileDocRef = doc(this.firestore, `profiles/${userId}`);
+
+        // Pass the DocumentReference directly to onSnapshot
+        const unsubscribe = onSnapshot(
+          profileDocRef,
+          (docSnapshot: DocumentSnapshot) => {
+            if (docSnapshot.exists()) {
+              console.log('Profile snapshot received:', docSnapshot.data());
+              const profile = {
+                userId: docSnapshot.id,
+                ...docSnapshot.data(),
+              } as MentorProfile;
+              subscriber.next(profile);
+            } else {
+              console.log('Profile does not exist.');
+              subscriber.next(null); // Emit null if the profile is not found
+            }
+          },
+          (error) => {
+            console.error('Profile snapshot error:', error);
+            subscriber.error(error);
+          }
+        );
+
+        // Return the cleanup function
+        return () => {
+          console.log('Unsubscribing from profile listener for:', userId);
+          unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error setting up profile listener:', error);
+        subscriber.error(error);
+        return () => {};
+      }
+    });
   }
 
   getAllMentors(): Observable<MentorProfile[]> {

@@ -2,7 +2,6 @@ import { Component, computed, inject, OnInit, signal } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
-import { User } from '../../../shared/interfaces/user.interface';
 import { ProfileService } from '../../../core/services/profile.service';
 import { of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
@@ -26,7 +25,7 @@ export class SidebarComponent {
       if (!user) {
         return of(null);
       }
-      return this.profileService.getProfile(user.id);
+      return this.profileService.getRealTimeProfile(user.id);
     })
   );
 

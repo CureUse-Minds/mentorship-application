@@ -5,21 +5,7 @@
     </a>
 
     <div class="flex md:flex items-center gap-8 text-sm font-medium text-brand-dark">
-      @if (isAuthenticated()) {
-      <div class="flex flex-col-reverse bg-amber-100 w-3xs">
-        <span class="text-brand-dark inline"
-          >Welcome,
-          <span class="font-semibold text-brand-dark">{{ currentUser()?.firstName }} !</span>
-        </span>
-      </div>
-
-      <button
-        (click)="logout()"
-        class="w-22 text-center py-2 text-xs text-white bg-brand-green hover:bg-brand-dark-green rounded-lg transition-colors"
-      >
-        Logout
-      </button>
-      } @else {
+      @if (isAuthenticated()) { } @else {
       <div class="text-sm">
         <a
           routerLink="/login"

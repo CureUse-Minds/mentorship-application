@@ -35,7 +35,7 @@ export class UserService {
 
   // Update user profile in Firestore
   updateUserProfile(userId: string, profileData: any): Observable<void> {
-    const userDocRef = doc(this.firestore, `user${userId}`);
+    const userDocRef = doc(this.firestore, `user/${userId}`);
     return from(setDoc(userDocRef, profileData, { merge: true }));
   }
 

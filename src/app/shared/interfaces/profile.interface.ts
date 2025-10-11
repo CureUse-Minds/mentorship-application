@@ -1,4 +1,5 @@
 import { Availability } from './availability.interface';
+import { MentorshipRequest } from './mentorship-request.interface';
 
 export interface BaseProfile {
   userId: string;
@@ -19,6 +20,8 @@ export interface MentorProfile extends BaseProfile {
   availability: Availability[];
   rating?: number;
   totalMentees?: number;
+  activeMentees?: number;
+  menteeLimit?: number;
   yearsOfExperience?: number;
 }
 
@@ -28,6 +31,7 @@ export interface MenteeProfile extends BaseProfile {
   currentMentor?: string; //mentor userId
   goalsAndObjectives?: string;
   completedSessions?: number;
+  mentorshipRequests?: MentorshipRequest[];
 }
 
 export type UserProfile = MentorProfile | MenteeProfile;

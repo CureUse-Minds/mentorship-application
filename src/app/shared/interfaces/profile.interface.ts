@@ -1,5 +1,5 @@
+import { Session } from './session.interface';
 import { Availability } from './availability.interface';
-import { MentorshipRequest } from './mentorship-request.interface';
 
 export interface BaseProfile {
   userId: string;
@@ -31,7 +31,7 @@ export interface MenteeProfile extends BaseProfile {
   currentMentor?: string; //mentor userId
   goalsAndObjectives?: string;
   completedSessions?: number;
-  mentorshipRequests?: MentorshipRequest[];
+  mentorshipRequests?: Session[];
 }
 
 export type UserProfile = MentorProfile | MenteeProfile;

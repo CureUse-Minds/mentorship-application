@@ -4,7 +4,6 @@ import { UserProfile, MentorProfile, MenteeProfile, User } from '../../shared/in
 import {
   collection,
   doc,
-  docData,
   Firestore,
   getDoc,
   getDocs,
@@ -25,9 +24,7 @@ export class ProfileService {
   // Create Profile
   createProfile(userId: string, profileData: Partial<UserProfile>): Observable<void> {
     const profileRef = doc(this.firestore, `profiles/${userId}`);
-
     const cleanData = prepareForFirestore(profileData, false);
-
     return from(setDoc(profileRef, cleanData));
   }
 
@@ -76,9 +73,7 @@ export class ProfileService {
   // UPDATE PROFILE
   updateProfile(userId: string, updates: Partial<UserProfile>): Observable<void> {
     const profileRef = doc(this.firestore, `profiles/${userId}`);
-
     const cleanUpdates = prepareForFirestore(updates, true);
-
     return from(updateDoc(profileRef, cleanUpdates));
   }
 
@@ -192,7 +187,6 @@ export class ProfileService {
         if (!profile) {
           return throwError(() => new Error('Mentee profile not found'));
         }
-
         const updatedInterests = profile.interests.filter((i) => i !== interest);
         return this.updateProfile(userId, { interests: updatedInterests });
       })
@@ -214,7 +208,6 @@ export class ProfileService {
       preferredLanguages: ['English'],
     };
 
-    // only add profilePicture if it exists
     if (user.profilePicture) {
       baseProfile.profilePicture = user.profilePicture;
     }
@@ -228,24 +221,20 @@ export class ProfileService {
         rating: 0,
         totalMentees: 0,
         yearsOfExperience: 0,
+        activeMentees: 0,
+        menteeLimit: 5,
       };
       return this.createProfile(user.id, removeUndefined(mentorProfile));
-    }
-
-    // handle mentee profile creation
-    else if (user.role === 'mentee') {
+    } else if (user.role === 'mentee') {
       const menteeProfile = {
         ...baseProfile,
-        role: 'mentee' as const, //explicit literal type
+        role: 'mentee' as const,
         interests: [],
         completedSessions: 0,
         goalsAndObjectives: '',
       };
       return this.createProfile(user.id, removeUndefined(menteeProfile));
-    }
-
-    // handle admin or unknown roles
-    else {
+    } else {
       return throwError(
         () => new Error(`Cannot initialize profile: unsupported role '${user.role}'`)
       );

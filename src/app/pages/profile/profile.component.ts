@@ -1,5 +1,5 @@
 import { AuthService } from './../../core/services/auth.service';
-import { Component, inject, OnInit, signal } from '@angular/core';
+import { Component, inject, OnInit, signal, WritableSignal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProfileService } from '../../core/services/profile.service';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
@@ -72,9 +72,9 @@ export class ProfileComponent implements OnInit {
       const mentorProfile = profile as MentorProfile;
       this.profileForm = this.formBuilder.group({
         ...baseFields,
-        expertise: mentorProfile.expertise,
+        expertise: [mentorProfile.expertise],
         yearsOfExperience: mentorProfile.yearsOfExperience || 0,
-        availability: mentorProfile.availability,
+        // availability: [mentorProfile.availability],
       });
     } else {
       const menteeProfile = profile as MenteeProfile;
@@ -97,7 +97,7 @@ export class ProfileComponent implements OnInit {
   }
 
   onSubmit() {
-    if (this.profileForm.invalid || !this.profile()) return;
+    if (this.profileForm.invalid || this.profileForm.pristine || !this.profile()) return;
 
     this.isSaving.set(true);
     this.clearMessages();
@@ -114,14 +114,12 @@ export class ProfileComponent implements OnInit {
         this.isEditMode.set(false);
         this.loadProfile(); // reload to get fresh data
 
-        timer(3000)
-          .pipe(take(1))
-          .subscribe(() => this.clearMessages());
+        this.displayMessage(this.successMessage, 'Profile updated successfully');
       },
       error: (error) => {
         console.error('Error updating profile:', error);
-        this.errorMessage.set('Failed to update profile. Please try again');
         this.isSaving.set(false);
+        this.displayMessage(this.errorMessage, 'Failed to update profile. Please try again.');
       },
     });
   }
@@ -135,11 +133,10 @@ export class ProfileComponent implements OnInit {
         this.newSkill.set('');
         this.loadProfile();
         this.successMessage.set('Skill added successfully');
-        // same about settimeout
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Skills added successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to add skill');
+        this.displayMessage(this.errorMessage, 'Failed to add skill');
         console.error(error);
       },
     });
@@ -151,11 +148,10 @@ export class ProfileComponent implements OnInit {
     this.profileService.removeSkill(this.profile()!.userId, skill).subscribe({
       next: () => {
         this.loadProfile();
-        this.successMessage.set('Skill removed successfully!');
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Skill removed successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to remove skill');
+        this.displayMessage(this.errorMessage, 'Failed to remove skill');
         console.error(error);
       },
     });
@@ -176,11 +172,10 @@ export class ProfileComponent implements OnInit {
         next: () => {
           this.newLanguage.set('');
           this.loadProfile();
-          this.successMessage.set('Language added successfully!');
-          setTimeout(() => this.clearMessages(), 2000);
+          this.displayMessage(this.successMessage, 'Language added successfully');
         },
         error: (error) => {
-          this.errorMessage.set('Failed to add language');
+          this.displayMessage(this.errorMessage, 'Failed to add language');
           console.error(error);
         },
       });
@@ -198,11 +193,10 @@ export class ProfileComponent implements OnInit {
       .subscribe({
         next: () => {
           this.loadProfile();
-          this.successMessage.set('Language removed successfully!');
-          setTimeout(() => this.clearMessages(), 2000);
+          this.displayMessage(this.successMessage, 'Language removed successfully');
         },
         error: (error) => {
-          this.errorMessage.set('Failed to remove language');
+          this.displayMessage(this.errorMessage, 'Failed to remove language');
           console.error(error);
         },
       });
@@ -217,11 +211,10 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.newExpertise.set('');
         this.loadProfile();
-        this.successMessage.set('Expertise added successfully!');
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Expertise added successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to add expertise');
+        this.displayMessage(this.errorMessage, 'Failed to add expertise');
         console.error(error);
       },
     });
@@ -234,10 +227,10 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.loadProfile();
         this.successMessage.set('Expertise removed successfully!');
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Expertise removed successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to remove expertise');
+        this.displayMessage(this.errorMessage, 'Failed to remove expertise');
         console.error(error);
       },
     });
@@ -252,11 +245,10 @@ export class ProfileComponent implements OnInit {
       next: () => {
         this.newInterest.set('');
         this.loadProfile();
-        this.successMessage.set('Interest added successfully!');
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Interest added successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to add interest');
+        this.displayMessage(this.errorMessage, 'Failed to add interest');
         console.error(error);
       },
     });
@@ -268,19 +260,30 @@ export class ProfileComponent implements OnInit {
     this.profileService.removeInterest(this.profile()!.userId, interest).subscribe({
       next: () => {
         this.loadProfile();
-        this.successMessage.set('Interest removed successfully!');
-        setTimeout(() => this.clearMessages(), 2000);
+        this.displayMessage(this.successMessage, 'Interest removed successfully');
       },
       error: (error) => {
-        this.errorMessage.set('Failed to remove interest');
+        this.displayMessage(this.errorMessage, 'Failed to remove interest');
         console.error(error);
       },
     });
   }
 
+  // ADDED: reusable helper method for displaying messages
   private clearMessages() {
     this.successMessage.set('');
     this.errorMessage.set('');
+  }
+
+  private displayMessage(
+    messageSignal: WritableSignal<string>,
+    message: string,
+    duration: number = 3000
+  ) {
+    messageSignal.set(message);
+    timer(duration)
+      .pipe(take(1))
+      .subscribe(() => messageSignal.set(''));
   }
 
   get isMentor(): boolean {

@@ -1,14 +1,100 @@
-import { Component } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { CalendarService } from '../../shared/services/calendar.service';
+import { GoogleCalendarSyncComponent } from '../../shared/components/google-calendar-sync/google-calendar-sync.component';
+import { DayEventsPopupComponent } from '../../shared/components/day-events-popup/day-events-popup.component';
+import { CalendarDay, MentorshipSession, CalendarEvent } from '../../shared/interfaces/calendar.interface';
+import { Subject, takeUntil } from 'rxjs';
 
 @Component({
   selector: 'app-calendar',
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule, GoogleCalendarSyncComponent, DayEventsPopupComponent],
   template: `
     <div class="p-6">
+      <!-- Tab Navigation -->
       <div class="mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Calendar</h1>
-        <p class="text-gray-600">Schedule and manage your mentorship sessions</p>
+        <div class="border-b border-gray-200">
+          <nav class="-mb-px flex space-x-8">
+            <button 
+              (click)="activeTab = 'calendar'"
+              [class.border-blue-500]="activeTab === 'calendar'"
+              [class.text-blue-600]="activeTab === 'calendar'"
+              [class.border-transparent]="activeTab !== 'calendar'"
+              [class.text-gray-500]="activeTab !== 'calendar'"
+              class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+              Calendar View
+            </button>
+            <button 
+              (click)="activeTab = 'google-sync'"
+              [class.border-blue-500]="activeTab === 'google-sync'"
+              [class.text-blue-600]="activeTab === 'google-sync'"
+              [class.border-transparent]="activeTab !== 'google-sync'"
+              [class.text-gray-500]="activeTab !== 'google-sync'"
+              class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
+              Google Calendar Sync
+            </button>
+          </nav>
+        </div>
+      </div>
+
+      @if (activeTab === 'calendar') {
+        <div class="mb-6">
+          <div class="flex justify-between items-start">
+            <div>
+              <h1 class="text-2xl font-bold text-gray-900">Calendar</h1>
+              <p class="text-gray-600">Schedule and manage your mentorship sessions</p>
+            </div>
+          
+          <!-- Filter Controls -->
+          <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+            <h3 class="text-sm font-medium text-gray-900 mb-3">Show Events</h3>
+            <div class="space-y-2">
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showSessions" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                <span class="ml-2 text-sm text-gray-700">Sessions</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showGoals" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700">Goals</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showMeetings" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
+                <span class="ml-2 text-sm text-gray-700">Meetings</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showReminders" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
+                <span class="ml-2 text-sm text-gray-700">Reminders</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showDeadlines" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-red-600 focus:ring-red-500">
+                <span class="ml-2 text-sm text-gray-700">Deadlines</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showImported" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                <span class="ml-2 text-sm text-gray-700">Google Calendar Events</span>
+              </label>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- Calendar Header -->
@@ -35,7 +121,8 @@ import { CommonModule } from '@angular/common';
               </button>
             </div>
             
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <button (click)="onScheduleSession()" 
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
               Schedule Session
             </button>
           </div>
@@ -43,8 +130,14 @@ import { CommonModule } from '@angular/common';
 
         <!-- Calendar Grid -->
         <div class="p-4">
-          <!-- Days of Week Headers -->
-          <div class="grid grid-cols-7 gap-1 mb-2">
+          @if (isLoading) {
+            <div class="flex justify-center items-center py-12">
+              <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <span class="ml-2 text-gray-600">Loading calendar...</span>
+            </div>
+          } @else {
+            <!-- Days of Week Headers -->
+            <div class="grid grid-cols-7 gap-1 mb-2">
             <div class="p-2 text-sm font-medium text-gray-500 text-center">Sun</div>
             <div class="p-2 text-sm font-medium text-gray-500 text-center">Mon</div>
             <div class="p-2 text-sm font-medium text-gray-500 text-center">Tue</div>
@@ -60,7 +153,9 @@ import { CommonModule } from '@angular/common';
               <div class="min-h-24 p-1 border border-gray-100 rounded hover:bg-gray-50 cursor-pointer"
                    [class.bg-gray-50]="!day.isCurrentMonth"
                    [class.bg-blue-50]="day.isToday"
-                   [class.border-blue-200]="day.isToday">
+                   [class.border-blue-200]="day.isToday"
+                   [class.bg-red-50]="day.isWeekend && day.isCurrentMonth"
+                   (click)="onDayClick(day)">
                 
                 <div class="flex justify-between items-start">
                   <span class="text-sm font-medium"
@@ -74,20 +169,29 @@ import { CommonModule } from '@angular/common';
                   }
                 </div>
 
-                <!-- Events for this day -->
-                @if (day.events && day.events.length > 0) {
+                <!-- Events and Sessions for this day -->
+                @if ((day.events && day.events.length > 0) || (day.sessions && day.sessions.length > 0)) {
                   <div class="mt-1 space-y-1">
-                    @for (event of day.events.slice(0, 2); track event.id) {
+                    <!-- Regular Events -->
+                    @for (event of day.events.slice(0, 1); track event.id) {
                       <div class="text-xs p-1 rounded text-white truncate"
-                           [class.bg-blue-500]="event.type === 'session'"
-                           [class.bg-green-500]="event.type === 'goal'"
-                           [class.bg-purple-500]="event.type === 'meeting'">
+                           [class]="getEventTypeColor(event.type)">
                         {{ event.title }}
+                        @if (event.startTime) {
+                          <span class="block text-xs opacity-75">{{ formatSessionTime(event.startTime) }}</span>
+                        }
                       </div>
                     }
-                    @if (day.events.length > 2) {
+                    <!-- Sessions -->
+                    @for (session of day.sessions.slice(0, 1); track session.id) {
+                      <div class="text-xs p-1 rounded bg-blue-500 text-white truncate">
+                        {{ session.title }}
+                        <span class="block text-xs opacity-75">{{ formatSessionTime(session.startTime) }}</span>
+                      </div>
+                    }
+                    @if ((day.events.length + day.sessions.length) > 2) {
                       <div class="text-xs text-gray-500">
-                        +{{ day.events.length - 2 }} more
+                        +{{ (day.events.length + day.sessions.length) - 2 }} more
                       </div>
                     }
                   </div>
@@ -95,6 +199,7 @@ import { CommonModule } from '@angular/common';
               </div>
             }
           </div>
+          }
         </div>
       </div>
 
@@ -117,16 +222,31 @@ import { CommonModule } from '@angular/common';
                   <div>
                     <h4 class="font-medium text-gray-900">{{ session.title }}</h4>
                     <p class="text-sm text-gray-600">
-                      {{ session.date }} at {{ session.time }} - {{ session.duration }}
+                      {{ formatSessionDate(session.date) }} at {{ formatSessionTime(session.startTime) }} - {{ session.duration }}
                     </p>
-                    <p class="text-sm text-gray-500">with {{ session.participant }}</p>
+                    <p class="text-sm text-gray-500">
+                      with {{ session.mentorId !== session.menteeId ? (session.mentorName !== session.menteeName ? session.mentorName + ' & ' + session.menteeName : session.mentorName) : session.mentorName }}
+                    </p>
+                    <span class="inline-block px-2 py-1 text-xs rounded-full"
+                          [class.bg-green-100]="session.status === 'confirmed'"
+                          [class.bg-yellow-100]="session.status === 'pending'"
+                          [class.bg-red-100]="session.status === 'cancelled'"
+                          [class.text-green-800]="session.status === 'confirmed'"
+                          [class.text-yellow-800]="session.status === 'pending'"
+                          [class.text-red-800]="session.status === 'cancelled'">
+                      {{ session.status | titlecase }}
+                    </span>
                   </div>
                 </div>
                 <div class="flex space-x-2">
-                  <button class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors">
+                  <button (click)="onRescheduleSession(session)" 
+                          [disabled]="session.status === 'cancelled'"
+                          class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50">
                     Reschedule
                   </button>
-                  <button class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors">
+                  <button (click)="onCancelSession(session)" 
+                          [disabled]="session.status === 'cancelled'"
+                          class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50">
                     Cancel
                   </button>
                 </div>
@@ -138,7 +258,8 @@ import { CommonModule } from '@angular/common';
                         d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v16a2 2 0 002 2z"></path>
                 </svg>
                 <p>No upcoming sessions scheduled</p>
-                <button class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                <button (click)="onScheduleSession()" 
+                        class="mt-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                   Schedule Your First Session
                 </button>
               </div>
@@ -146,38 +267,105 @@ import { CommonModule } from '@angular/common';
           </div>
         </div>
       </div>
+      
+      } @else if (activeTab === 'google-sync') {
+        <!-- Google Calendar Sync Tab -->
+        <div>
+          <app-google-calendar-sync></app-google-calendar-sync>
+        </div>
+      }
+
+      <!-- Day Events Popup -->
+      <app-day-events-popup
+        [selectedDate]="selectedPopupDate"
+        [isVisible]="isPopupVisible"
+        (closePopup)="closeDayEventsPopup()"
+        (addEventRequested)="onAddEventRequested($event)">
+      </app-day-events-popup>
     </div>
   `,
   styleUrls: []
 })
-export class CalendarComponent {
+export class CalendarComponent implements OnInit, OnDestroy {
+  private calendarService = inject(CalendarService);
+  private destroy$ = new Subject<void>();
+  
   currentDate = new Date();
   currentMonth = this.getMonthName(this.currentDate.getMonth());
   currentYear = this.currentDate.getFullYear();
   calendarDays: CalendarDay[] = [];
+  upcomingSessions: MentorshipSession[] = [];
+  isLoading = false;
+  
+  // Tab management
+  activeTab: 'calendar' | 'google-sync' = 'calendar';
+  
+  // Filter options
+  showSessions = true;
+  showGoals = true;
+  showMeetings = true;
+  showReminders = true;
+  showDeadlines = true;
+  showImported = true;
 
-  // Sample data - in real app, this would come from a service
-  upcomingSessions = [
-    {
-      id: 1,
-      title: 'Career Planning Session',
-      date: 'Oct 15, 2025',
-      time: '2:00 PM',
-      duration: '1 hour',
-      participant: 'John Smith'
-    },
-    {
-      id: 2,
-      title: 'Code Review & Mentoring',
-      date: 'Oct 18, 2025',
-      time: '10:00 AM',
-      duration: '45 minutes',
-      participant: 'Sarah Johnson'
-    }
-  ];
+  // Day events popup
+  isPopupVisible = false;
+  selectedPopupDate = new Date();
 
-  constructor() {
-    this.generateCalendar();
+  ngOnInit() {
+    this.loadCalendarData();
+    this.loadUpcomingSessions();
+    
+    // Update filter in service
+    this.updateServiceFilter();
+  }
+  
+  ngOnDestroy() {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+  
+  private loadCalendarData() {
+    this.isLoading = true;
+    this.calendarService.generateCalendarDays(
+      this.currentYear, 
+      this.currentDate.getMonth()
+    ).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (days) => {
+        this.calendarDays = days;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error loading calendar data:', error);
+        this.isLoading = false;
+      }
+    });
+  }
+  
+  private loadUpcomingSessions() {
+    this.calendarService.getUpcomingSessions(5).pipe(
+      takeUntil(this.destroy$)
+    ).subscribe({
+      next: (sessions) => {
+        this.upcomingSessions = sessions;
+      },
+      error: (error) => {
+        console.error('Error loading upcoming sessions:', error);
+      }
+    });
+  }
+  
+  private updateServiceFilter() {
+    this.calendarService.updateFilter({
+      showSessions: this.showSessions,
+      showGoals: this.showGoals,
+      showMeetings: this.showMeetings,
+      showReminders: this.showReminders,
+      showDeadlines: this.showDeadlines,
+      showImported: this.showImported
+    });
   }
 
   previousMonth() {
@@ -193,63 +381,72 @@ export class CalendarComponent {
   private updateCalendar() {
     this.currentMonth = this.getMonthName(this.currentDate.getMonth());
     this.currentYear = this.currentDate.getFullYear();
-    this.generateCalendar();
+    this.loadCalendarData();
   }
-
-  private generateCalendar() {
-    const year = this.currentDate.getFullYear();
-    const month = this.currentDate.getMonth();
-    const today = new Date();
-    
-    // Get first day of month and number of days
-    const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
-    const daysInMonth = lastDay.getDate();
-    const startDate = new Date(firstDay);
-    startDate.setDate(startDate.getDate() - firstDay.getDay());
-
-    this.calendarDays = [];
-
-    // Generate 42 days (6 weeks)
-    for (let i = 0; i < 42; i++) {
-      const date = new Date(startDate);
-      date.setDate(startDate.getDate() + i);
-      
-      const day: CalendarDay = {
-        date: date.toISOString(),
-        day: date.getDate(),
-        isCurrentMonth: date.getMonth() === month,
-        isToday: this.isSameDay(date, today),
-        hasEvents: Math.random() > 0.8, // Random events for demo
-        events: this.getEventsForDate(date)
-      };
-
-      this.calendarDays.push(day);
+  
+  // New methods for interaction
+  onDayClick(day: CalendarDay) {
+    this.selectedPopupDate = day.date;
+    this.isPopupVisible = true;
+  }
+  
+  onScheduleSession() {
+    // TODO: Open session scheduling modal
+  }
+  
+  onRescheduleSession(session: MentorshipSession) {
+    // TODO: Open reschedule modal
+  }
+  
+  onCancelSession(session: MentorshipSession) {
+    // TODO: Show confirmation and cancel session
+    this.calendarService.updateSession({
+      id: session.id,
+      status: 'cancelled'
+    }).subscribe({
+      next: () => {
+        this.loadUpcomingSessions(); // Refresh list
+      },
+      error: (error) => {
+        // Error cancelling session
+      }
+    });
+  }
+  
+  onFilterChange() {
+    this.updateServiceFilter();
+    this.loadCalendarData();
+  }
+  
+  formatSessionDate(date: Date): string {
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  }
+  
+  formatSessionTime(time: string): string {
+    const [hours, minutes] = time.split(':');
+    const hour24 = parseInt(hours);
+    const hour12 = hour24 === 0 ? 12 : hour24 > 12 ? hour24 - 12 : hour24;
+    const ampm = hour24 >= 12 ? 'PM' : 'AM';
+    return `${hour12}:${minutes} ${ampm}`;
+  }
+  
+  getEventTypeColor(type: CalendarEvent['type']): string {
+    switch (type) {
+      case 'session': return 'bg-blue-500';
+      case 'goal': return 'bg-green-500';
+      case 'meeting': return 'bg-purple-500';
+      case 'reminder': return 'bg-yellow-500';
+      case 'deadline': return 'bg-red-500';
+      case 'imported': return 'bg-indigo-500 border border-indigo-300';
+      default: return 'bg-gray-500';
     }
   }
 
-  private getEventsForDate(date: Date): CalendarEvent[] {
-    // Sample events - in real app, this would come from a service
-    const events: CalendarEvent[] = [];
-    
-    if (Math.random() > 0.9) {
-      events.push({
-        id: Math.random(),
-        title: 'Mentoring Session',
-        type: 'session'
-      });
-    }
-    
-    if (Math.random() > 0.95) {
-      events.push({
-        id: Math.random(),
-        title: 'Goal Review',
-        type: 'goal'
-      });
-    }
 
-    return events;
-  }
 
   private getMonthName(month: number): string {
     const months = [
@@ -264,19 +461,15 @@ export class CalendarComponent {
            date1.getMonth() === date2.getMonth() &&
            date1.getFullYear() === date2.getFullYear();
   }
-}
 
-interface CalendarDay {
-  date: string;
-  day: number;
-  isCurrentMonth: boolean;
-  isToday: boolean;
-  hasEvents: boolean;
-  events: CalendarEvent[];
-}
+  // Day events popup methods
+  closeDayEventsPopup() {
+    this.isPopupVisible = false;
+  }
 
-interface CalendarEvent {
-  id: number;
-  title: string;
-  type: 'session' | 'goal' | 'meeting';
+  onAddEventRequested(date: Date) {
+    // TODO: Implement add event functionality
+    // For now, just close the popup
+    this.closeDayEventsPopup();
+  }
 }

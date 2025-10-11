@@ -6,6 +6,7 @@ import {
   deleteDoc,
   doc,
   Firestore,
+  getDoc,
   getDocs,
   query,
   runTransaction,
@@ -14,7 +15,7 @@ import {
   where,
 } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
-import { from, map, Observable, switchMap, take, throwError } from 'rxjs';
+import { combineLatest, from, map, Observable, switchMap, take, throwError } from 'rxjs';
 import { MentorProfile, Session } from '../../shared/interfaces';
 
 @Injectable({
@@ -25,25 +26,41 @@ export class SessionService {
   private authService = inject(AuthService);
 
   sendRequest(mentorId: string, message: string): Observable<void> {
-    return this.authService.getCurrentUser().pipe(
-      take(1),
-      switchMap((user) => {
-        if (!user) {
+    // Get the current user (mentee)
+    const mentee$ = this.authService.getCurrentUser().pipe(take(1));
+
+    // create a reference and an observable for the mentor's profile
+    const mentorProfileRef = doc(this.firestore, `profiles/${mentorId}`);
+    const mentor$ = from(getDoc(mentorProfileRef)).pipe(
+      map((docSnap) => {
+        if (!docSnap.exists()) {
+          throw new Error('Mentor profile not found');
+        }
+        return docSnap.data() as MentorProfile;
+      })
+    );
+    return combineLatest([mentee$, mentor$]).pipe(
+      switchMap(([mentee, mentorProfile]) => {
+        if (!mentee) {
           return throwError(() => new Error('User not logged in'));
         }
+
         const request: Omit<Session, 'id'> = {
-          menteeId: user.id,
+          menteeId: mentee.id,
           mentorId,
-          menteeName: `${user.firstName} ${user.lastName}`,
-          mentorName: '',
+          menteeName: `${mentee.firstName} ${mentee.lastName}`,
+          mentorName: `${mentorProfile.firstName} ${mentorProfile.lastName}`,
           message,
           status: 'pending',
           createdAt: new Date(),
           updatedAt: new Date(),
         };
+
         const requestCollection = collection(this.firestore, 'sessions');
-        return from(addDoc(requestCollection, request)).pipe(map(() => void 0));
+        // return the promise from addDoc wrapped in from
+        return from(addDoc(requestCollection, request));
       }),
+      // map the final result to void
       map(() => void 0)
     );
   }

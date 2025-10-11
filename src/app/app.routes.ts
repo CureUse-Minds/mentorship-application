@@ -42,7 +42,7 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
   },
   {
-    path: 'mentor/:id',
+    path: 'mentor',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['mentor'] },
     children: [
@@ -54,11 +54,9 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'profile',
+        path: 'requests',
         loadComponent: () =>
-          import('./pages/mentor/mentor-profile/mentor-profile.component').then(
-            (c) => c.MentorProfile
-          ),
+          import('./pages/mentor/requests/requests.component').then((c) => c.Requests),
       },
       {
         path: '',
@@ -68,7 +66,7 @@ export const routes: Routes = [
     ],
   },
   {
-    path: 'mentee/:id',
+    path: 'mentee',
     canActivate: [AuthGuard, RoleGuard],
     data: { roles: ['mentee'] },
     children: [
@@ -80,11 +78,9 @@ export const routes: Routes = [
           ),
       },
       {
-        path: 'profile',
+        path: 'find-mentor',
         loadComponent: () =>
-          import('./pages/mentee/mentee-profile/mentee-profile.component').then(
-            (c) => c.MenteeProfile
-          ),
+          import('./pages/mentee/find-mentor/find-mentor.component').then((c) => c.FindMentor),
       },
       {
         path: '',
@@ -102,8 +98,7 @@ export const routes: Routes = [
   {
     path: 'goals',
     canActivate: [AuthGuard],
-    loadComponent: () =>
-      import('./pages/goals/goals.component').then((c) => c.GoalsComponent),
+    loadComponent: () => import('./pages/goals/goals.component').then((c) => c.GoalsComponent),
   },
   {
     path: 'messages',

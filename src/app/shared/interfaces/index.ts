@@ -6,4 +6,3 @@ export * from './profile.interface';
 export * from './session.interface';
 export * from './dashboard.interface';
 export * from './goal.interfaces';
-export * from './mentorship-request.interface';

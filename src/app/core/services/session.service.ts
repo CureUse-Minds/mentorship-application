@@ -2,15 +2,13 @@ import { Injectable, inject } from '@angular/core';
 import {
   addDoc,
   collection,
-  collectionData,
-  deleteDoc,
   doc,
   Firestore,
   getDoc,
-  getDocs,
+  onSnapshot,
   query,
+  QuerySnapshot,
   runTransaction,
-  Timestamp,
   updateDoc,
   where,
 } from '@angular/fire/firestore';
@@ -39,6 +37,7 @@ export class SessionService {
         return docSnap.data() as MentorProfile;
       })
     );
+
     return combineLatest([mentee$, mentor$]).pipe(
       switchMap(([mentee, mentorProfile]) => {
         if (!mentee) {
@@ -57,29 +56,131 @@ export class SessionService {
         };
 
         const requestCollection = collection(this.firestore, 'sessions');
-        // return the promise from addDoc wrapped in from
+        console.log('Creating session request:', request);
+
         return from(addDoc(requestCollection, request));
       }),
-      // map the final result to void
-      map(() => void 0)
+      map(() => {
+        console.log('Session request created successfully');
+        return void 0;
+      })
     );
   }
 
   getRequestForMentor(mentorId: string): Observable<Session[]> {
-    const requestCollection = collection(this.firestore, 'sessions');
-    const q = query(
-      requestCollection,
-      where('mentorId', '==', mentorId),
-      where('status', '==', 'pending')
-    );
-    return collectionData(q, { idField: 'id' }) as Observable<Session[]>;
+    // console.log('Setting up real-time listener for mentor:', mentorId);
+
+    return new Observable<Session[]>((subscriber) => {
+      try {
+        const sessionsRef = collection(this.firestore, 'sessions');
+        const q = query(
+          sessionsRef,
+          where('mentorId', '==', mentorId),
+          where('status', '==', 'pending')
+        );
+
+        // FIX: Set up real-time listener using onSnapshot
+        const unsubscribe = onSnapshot(
+          q,
+          (querySnapshot: QuerySnapshot) => {
+            console.log('Snapshot received, number of docs:', querySnapshot.size);
+
+            const sessions: Session[] = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              console.log('Document data:', data);
+
+              sessions.push({
+                id: doc.id,
+                ...data,
+                createdAt: data['createdAt']?.toDate
+                  ? data['createdAt'].toDate()
+                  : data['createdAt'],
+                updatedAt: data['updatedAt']?.toDate
+                  ? data['updatedAt'].toDate()
+                  : data['updatedAt'],
+              } as Session);
+            });
+
+            // Sort by createdAt descending (newest first)
+            sessions.sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            });
+
+            console.log('Emitting sessions:', sessions);
+            subscriber.next(sessions);
+          },
+          (error) => {
+            console.error('Snapshot error:', error);
+            subscriber.error(error);
+          }
+        );
+
+        // Return cleanup function
+        return () => {
+          console.log('Unsubscribing from sessions listener');
+          unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error setting up listener:', error);
+        subscriber.error(error);
+        return () => {};
+      }
+    });
   }
 
   // Get all requests for a mentee
   getRequestsForMentee(menteeId: string): Observable<Session[]> {
-    const requestCollection = collection(this.firestore, 'sessions');
-    const q = query(requestCollection, where('menteeId', '==', menteeId));
-    return collectionData(q, { idField: 'id' }) as Observable<Session[]>;
+    console.log('Setting up real-time listener for mentee:', menteeId);
+
+    return new Observable<Session[]>((subscriber) => {
+      try {
+        const sessionsRef = collection(this.firestore, 'sessions');
+        const q = query(sessionsRef, where('menteeId', '==', menteeId));
+
+        // FIX: onSnapshot firebase method to fetch data changes
+        const unsubscribe = onSnapshot(
+          q,
+          (querySnapshot: QuerySnapshot) => {
+            const sessions: Session[] = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              sessions.push({
+                id: doc.id,
+                ...data,
+                createdAt: data['createdAt']?.toDate
+                  ? data['createdAt'].toDate()
+                  : data['createdAt'],
+                updatedAt: data['updatedAt']?.toDate
+                  ? data['updatedAt'].toDate()
+                  : data['updatedAt'],
+              } as Session);
+            });
+
+            // Sort by createdAt descending
+            sessions.sort((a, b) => {
+              const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return dateB - dateA;
+            });
+
+            subscriber.next(sessions);
+          },
+          (error) => {
+            console.error('Snapshot error:', error);
+            subscriber.error(error);
+          }
+        );
+
+        return () => unsubscribe();
+      } catch (error) {
+        console.error('Error setting up listener:', error);
+        subscriber.error(error);
+        return () => {};
+      }
+    });
   }
 
   acceptRequest(requestId: string): Observable<void> {
@@ -89,19 +190,22 @@ export class SessionService {
         if (!user) {
           return throwError(() => new Error('Mentor not logged in'));
         }
+
         const requestRef = doc(this.firestore, 'sessions', requestId);
         const mentorProfileRef = doc(this.firestore, `profiles/${user.id}`);
+
+        console.log('Accepting request:', requestId);
 
         return from(
           runTransaction(this.firestore, async (transaction) => {
             const requestDoc = await transaction.get(requestRef);
             if (!requestDoc.exists()) {
-              throw 'Request does not exist';
+              throw new Error('Request does not exist');
             }
 
             const mentorProfileDoc = await transaction.get(mentorProfileRef);
             if (!mentorProfileDoc.exists()) {
-              throw 'Mentor profile does not exist!';
+              throw new Error('Mentor profile does not exist!');
             }
 
             const mentorProfileData = mentorProfileDoc.data() as MentorProfile;
@@ -109,11 +213,21 @@ export class SessionService {
             const menteeLimit = mentorProfileData.menteeLimit || 5;
 
             if (activeMentees >= menteeLimit) {
-              throw `Mentee limit of ${menteeLimit} reached!`;
+              throw new Error(`Mentee limit of ${menteeLimit} reached!`);
             }
 
-            transaction.update(requestRef, { status: 'accepted', updatedAt: new Date() });
-            transaction.update(mentorProfileRef, { activeMentees: activeMentees + 1 });
+            transaction.update(requestRef, {
+              status: 'accepted',
+              updatedAt: new Date(),
+            });
+            transaction.update(mentorProfileRef, {
+              activeMentees: activeMentees + 1,
+            });
+          })
+        ).pipe(
+          map(() => {
+            console.log('Request accepted successfully');
+            return void 0;
           })
         );
       })
@@ -121,7 +235,18 @@ export class SessionService {
   }
 
   rejectRequest(requestId: string): Observable<void> {
+    // console.log('Rejecting request:', requestId);
     const requestRef = doc(this.firestore, 'sessions', requestId);
-    return from(updateDoc(requestRef, { status: 'rejected', updatedAt: new Date() }));
+    return from(
+      updateDoc(requestRef, {
+        status: 'rejected',
+        updatedAt: new Date(),
+      })
+    ).pipe(
+      map(() => {
+        console.log('Request rejected successfully');
+        return void 0;
+      })
+    );
   }
 }

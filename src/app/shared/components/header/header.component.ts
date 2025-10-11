@@ -10,40 +10,4 @@ import { User } from '../../interfaces';
   templateUrl: './header.component.html',
   styleUrls: ['./header.component.css'],
 })
-export class HeaderComponent implements OnInit, OnDestroy {
-  private authService = inject(AuthService);
-  private router = inject(Router);
-  private userSubscription!: Subscription;
-
-  currentUser = signal<User | null>(null);
-
-  isAuthenticated = computed(() => this.currentUser() !== null);
-
-  userName = computed(() => {
-    const user = this.currentUser();
-    return user ? user.firstName : 'Guest';
-  });
-
-  constructor() {}
-
-  ngOnInit(): void {
-    this.userSubscription = this.authService.user$.subscribe((user) => this.currentUser.set(user));
-  }
-
-  ngOnDestroy(): void {
-    if (this.userSubscription) {
-      this.userSubscription.unsubscribe();
-    }
-  }
-
-  logout(): void {
-    this.authService.logout().subscribe({
-      next: () => {
-        this.router.navigate(['/login']);
-      },
-      error: () => {
-        this.router.navigate(['/login']);
-      },
-    });
-  }
-}
+export class HeaderComponent {}

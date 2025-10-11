@@ -8,19 +8,14 @@ import { filter, map, combineLatest, startWith } from 'rxjs';
 
 @Component({
   selector: 'app-root',
-  imports: [
-    CommonModule,
-    RouterOutlet, 
-    SidebarComponent,
-    HeaderComponent
-  ],
+  imports: [CommonModule, RouterOutlet, SidebarComponent, HeaderComponent],
   templateUrl: './app.html',
-  styleUrl: './app.css'
+  styleUrl: './app.css',
 })
 export class App implements OnInit {
   private router = inject(Router);
   private authService = inject(AuthService);
-  
+
   showSidebar = false;
 
   // Routes that should show the sidebar (authenticated routes)
@@ -35,7 +30,7 @@ export class App implements OnInit {
     '/profile',
     '/settings',
     '/mentor',
-    '/mentee'
+    '/mentee',
   ];
 
   ngOnInit() {
@@ -43,17 +38,17 @@ export class App implements OnInit {
     combineLatest([
       this.authService.isAuthenticated$,
       this.router.events.pipe(
-        filter(event => event instanceof NavigationEnd),
-        map(event => (event as NavigationEnd).url),
+        filter((event) => event instanceof NavigationEnd),
+        map((event) => (event as NavigationEnd).url),
         // Start with current URL
         startWith(this.router.url)
-      )
+      ),
     ]).subscribe(([isAuthenticated, currentUrl]) => {
       this.showSidebar = isAuthenticated && this.shouldShowSidebar(currentUrl);
     });
   }
 
   private shouldShowSidebar(url: string): boolean {
-    return this.protectedRoutes.some(route => url.startsWith(route));
+    return this.protectedRoutes.some((route) => url.startsWith(route));
   }
 }

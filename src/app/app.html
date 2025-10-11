@@ -1,19 +1,20 @@
 <!-- Show sidebar only when user is authenticated and on protected routes -->
 @if (showSidebar) {
-  <app-sidebar></app-sidebar>
+<app-sidebar></app-sidebar>
 }
 
 <!-- Show header only on public routes -->
 @if (!showSidebar) {
-  <app-header></app-header>
+<app-header></app-header>
 }
 
 <!-- Main content area - adjust margin based on sidebar visibility -->
-<div class="min-h-screen transition-all duration-300"
-     [class.bg-gray-50]="showSidebar"
-     [class.bg-white]="!showSidebar"
-     [class.sm:ml-64]="showSidebar">
-  
+<div
+  class="min-h-screen transition-all duration-300"
+  [class.bg-gray-50]="showSidebar"
+  [class.bg-white]="!showSidebar"
+  [class.sm:ml-64]="showSidebar"
+>
   <!-- Main content -->
   <main [class.p-0]="!showSidebar" [class.p-4]="showSidebar">
     <router-outlet />

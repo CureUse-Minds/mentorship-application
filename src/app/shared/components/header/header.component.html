@@ -5,7 +5,17 @@
     </a>
 
     <div class="flex md:flex items-center gap-8 text-sm font-medium text-brand-dark">
-      @if (isAuthenticated()) { } @else {
+      @if (isAuthenticated()) {
+      <div class="flex items-center gap-4">
+        <span class="font-semibold">Hello, {{ userName() }}</span>
+        <button
+          (click)="logout()"
+          class="bg-red-500 hover:bg-red-600 px-3 py-2 text-white text-sm rounded-lg"
+        >
+          Logout
+        </button>
+      </div>
+      } @else {
       <div class="text-sm">
         <a
           routerLink="/login"

@@ -1,0 +1,337 @@
+<aside
+  class="fixed left-0 top-0 z-40 w-64 h-screen transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0"
+  [class.translate-x-0]="isOpen()"
+  [class.-translate-x-full]="!isOpen()"
+>
+  <div class="h-full px-3 py-4 overflow-y-auto">
+    <!-- Logo -->
+    <div class="flex items-center mb-8 px-2">
+      <span class="text-xl font-bold italic text-green-600">CureUseMinds</span>
+    </div>
+
+    <!-- User Profile Section -->
+    @if (currentUser(); as user) {
+    <div class="mb-8 p-3 bg-gray-50 rounded-lg">
+      <div class="flex items-center">
+        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+          @if (user.profilePicture) {
+          <img
+            [src]="user.profilePicture"
+            [alt]="user.firstName + ' ' + user.lastName || 'User'"
+            class="w-10 h-10 rounded-full object-cover"
+          />
+          } @else {
+          <span class="text-blue-600 font-semibold text-sm">
+            {{ getUserInitials() }}
+          </span>
+          }
+        </div>
+        <div class="ml-3 flex-1 min-w-0">
+          <p class="text-sm font-medium text-gray-900 truncate">
+            {{ getDisplayName() }}
+          </p>
+          <p class="text-xs text-gray-500 capitalize">
+            {{ user.role }}
+          </p>
+        </div>
+      </div>
+    </div>
+    }
+
+    <!-- Navigation Menu -->
+    <nav class="space-y-2">
+      <!-- Dashboard -->
+      <a
+        routerLink="/dashboard"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z"
+          ></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 5v2m8-2v2"
+          ></path>
+        </svg>
+        Dashboard
+      </a>
+
+      <!-- Calendar -->
+      <a
+        routerLink="/calendar"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2-2v16a2 2 0 002 2z"
+          ></path>
+        </svg>
+        Calendar
+      </a>
+
+      <!-- Sessions -->
+      <a
+        routerLink="/sessions"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+          ></path>
+        </svg>
+        Sessions
+      </a>
+
+      <!-- Goals -->
+      <a
+        routerLink="/goals"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"
+          ></path>
+        </svg>
+        Goals
+      </a>
+
+      <!-- Messages -->
+      <a
+        routerLink="/messages"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-4l-4 4v-4z"
+          ></path>
+        </svg>
+        Messages
+        <!-- Badge for unread messages -->
+        <span class="ml-auto bg-red-500 text-white text-xs rounded-full px-2 py-0.5">3</span>
+      </a>
+
+      <!-- Progress -->
+      <a
+        routerLink="/progress"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          ></path>
+        </svg>
+        Progress
+      </a>
+
+      @if (currentUser()?.role === 'mentor') {
+      <a
+        routerLink="/mentor/requests"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+          ></path>
+        </svg>
+        Requests
+      </a>
+      } @else {
+      <a
+        routerLink="/mentee/find-mentor"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg class="w-5 h-5 mr-3" aria-hidden="true" viewBox="0 0 640 640">
+          <path
+            fill="#99a1af"
+            d="M480 272C480 317.9 465.1 360.3 440 394.7L566.6 521.4C579.1 533.9 579.1 554.2 566.6 566.7C554.1 579.2 533.8 579.2 521.3 566.7L394.7 440C360.3 465.1 317.9 480 272 480C157.1 480 64 386.9 64 272C64 157.1 157.1 64 272 64C386.9 64 480 157.1 480 272zM272 416C351.5 416 416 351.5 416 272C416 192.5 351.5 128 272 128C192.5 128 128 192.5 128 272C128 351.5 192.5 416 272 416z"
+          />
+        </svg>
+        Find Mentor
+      </a>
+      }
+
+      <!-- Resources -->
+      <a
+        routerLink="/resources"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+          ></path>
+        </svg>
+        Resources
+      </a>
+
+      <!-- Divider -->
+      <div class="border-t border-gray-200 my-4"></div>
+
+      <!-- Profile -->
+      <a
+        routerLink="/profile"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+          ></path>
+        </svg>
+        Profile
+      </a>
+
+      <!-- Settings -->
+      <a
+        routerLink="/settings"
+        routerLinkActive="bg-blue-50 border-r-2 border-blue-600 text-blue-700"
+        class="flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-gray-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+          ></path>
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+          ></path>
+        </svg>
+        Settings
+      </a>
+
+      <!-- Logout -->
+      <button
+        (click)="logout()"
+        class="w-full flex items-center px-2 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-red-50 hover:text-red-700 group"
+      >
+        <svg
+          class="w-5 h-5 mr-3 text-gray-400 group-hover:text-red-500"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+          ></path>
+        </svg>
+        Logout
+      </button>
+    </nav>
+  </div>
+</aside>
+
+<!-- Mobile menu button -->
+<button
+  (click)="toggleSidebar()"
+  class="fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg sm:hidden"
+>
+  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      stroke-linecap="round"
+      stroke-linejoin="round"
+      stroke-width="2"
+      d="M4 6h16M4 12h16M4 18h16"
+    ></path>
+  </svg>
+</button>
+
+<!-- Mobile overlay -->
+@if (isOpen()) {
+<div (click)="closeSidebar()" class="fixed inset-0 z-30 bg-black bg-opacity-50 sm:hidden"></div>
+}

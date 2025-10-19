@@ -22,6 +22,7 @@ export class App implements OnInit {
   private readonly protectedRoutes = [
     '/dashboard',
     '/calendar',
+    '/booking',
     '/sessions',
     '/goals',
     '/messages',

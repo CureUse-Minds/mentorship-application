@@ -3,6 +3,7 @@ import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProfileService } from '../../../core/services/profile.service';
+import { MessagesService } from '../../services/messages.service';
 import { of, switchMap } from 'rxjs';
 import { toSignal } from '@angular/core/rxjs-interop';
 
@@ -14,6 +15,7 @@ import { toSignal } from '@angular/core/rxjs-interop';
 export class SidebarComponent {
   private authService = inject(AuthService);
   private profileService = inject(ProfileService);
+  private messagesService = inject(MessagesService);
   private router = inject(Router);
 
   isOpen = signal(false);
@@ -30,6 +32,9 @@ export class SidebarComponent {
   );
 
   currentUser = toSignal(this.user$, { initialValue: null });
+  
+  // Real-time unread count from Firebase
+  unreadCount = toSignal(this.messagesService.getTotalUnreadCount(), { initialValue: 0 });
 
   // --- Utility Functions (computed signals for better performance) ---
 

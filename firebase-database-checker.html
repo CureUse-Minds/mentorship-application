@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Firebase Database Structure Checker</title>
+    <meta charset="utf-8">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .header { background: #4285f4; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .section { background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #4285f4; }
+        .results { background: white; padding: 15px; border: 1px solid #ddd; border-radius: 4px; margin: 10px 0; }
+        .success { color: #0f5132; background-color: #d1e7dd; border-color: #badbcc; }
+        .warning { color: #664d03; background-color: #fff3cd; border-color: #ffecb5; }
+        .error { color: #842029; background-color: #f8d7da; border-color: #f5c2c7; }
+        pre { background: #f8f8f8; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        button { background: #4285f4; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #3367d6; }
+        .loading { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 Firebase Database Structure Checker</h1>
+            <p>Diagnose why mentors aren't showing up in your mentorship application</p>
+        </div>
+
+        <div class="section">
+            <h2>📊 Database Analysis</h2>
+            <button onclick="runFullAnalysis()">Run Full Analysis</button>
+            <button onclick="runQuickCheck()">Quick Check</button>
+            <button onclick="testQueries()">Test Queries</button>
+            <div id="analysisResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>🎯 Mentor Search</h2>
+            <p>Search for mentors using different field patterns:</p>
+            <button onclick="findMentors()">Find Mentors</button>
+            <div id="mentorResults"></div>
+        </div>
+
+        <div class="section">
+            <h2>🔧 Fix Suggestions</h2>
+            <div id="suggestions">
+                <p><em>Run analysis first to get personalized suggestions...</em></p>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getFirestore, collection, getDocs, query, where, limit, orderBy } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js';
+
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: 'AIzaSyBcTMWDws60YTNp8Dv-h90RGXdgmSUP9QU',
+            authDomain: 'mentorship-app-angular.firebaseapp.com',
+            projectId: 'mentorship-app-angular',
+            storageBucket: 'mentorship-app-angular.firebasestorage.app',
+            messagingSenderId: '510740484701',
+            appId: '1:510740484701:web:81ae056c2486e11aedb3b4',
+            measurementId: 'G-08K2DSE23K',
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+
+        // Make functions available globally
+        window.runFullAnalysis = runFullAnalysis;
+        window.runQuickCheck = runQuickCheck;
+        window.testQueries = testQueries;
+        window.findMentors = findMentors;
+
+        async function runQuickCheck() {
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Running quick check...</div>';
+
+            try {
+                const usersRef = collection(db, 'users');
+                const snapshot = await getDocs(usersRef);
+                
+                let html = '<div class="results success">';
+                html += `<h3>✅ Connection Successful</h3>`;
+                html += `<p><strong>Total Users:</strong> ${snapshot.docs.length}</p>`;
+
+                if (snapshot.docs.length === 0) {
+                    html += '</div><div class="results warning">';
+                    html += '<h3>⚠️ No Users Found</h3>';
+                    html += '<p>Your database appears to be empty. You need to:</p>';
+                    html += '<ul><li>Register some users in your application</li><li>Set at least one user\'s role to "mentor"</li></ul>';
+                } else {
+                    // Analyze roles
+                    const roles = new Set();
+                    let mentorCount = 0;
+                    
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        if (data.role) roles.add(data.role);
+                        if (data.userType) roles.add(data.userType);
+                        if (data.accountType) roles.add(data.accountType);
+                        
+                        if (data.role === 'mentor' || data.userType === 'mentor' || data.accountType === 'mentor') {
+                            mentorCount++;
+                        }
+                    });
+
+                    html += `<p><strong>Available Roles:</strong> ${Array.from(roles).join(', ') || 'None found'}</p>`;
+                    html += `<p><strong>Mentors Found:</strong> ${mentorCount}</p>`;
+                }
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+
+                // Update suggestions
+                updateSuggestions(snapshot.docs);
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="results error"><h3>❌ Error</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        async function runFullAnalysis() {
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Running full analysis...</div>';
+
+            try {
+                const usersRef = collection(db, 'users');
+                const snapshot = await getDocs(usersRef);
+                
+                let html = '<div class="results success">';
+                html += '<h3>📊 Full Database Analysis</h3>';
+                html += `<p><strong>Total Documents:</strong> ${snapshot.docs.length}</p>`;
+
+                if (snapshot.docs.length > 0) {
+                    // Field analysis
+                    const fieldStats = {};
+                    const sampleData = [];
+
+                    snapshot.docs.forEach(doc => {
+                        const data = doc.data();
+                        sampleData.push({ id: doc.id, ...data });
+                        
+                        Object.keys(data).forEach(field => {
+                            if (!fieldStats[field]) {
+                                fieldStats[field] = { count: 0, samples: [] };
+                            }
+                            fieldStats[field].count++;
+                            if (fieldStats[field].samples.length < 3) {
+                                fieldStats[field].samples.push(data[field]);
+                            }
+                        });
+                    });
+
+                    html += '<h4>📋 Field Statistics:</h4>';
+                    html += '<pre>' + JSON.stringify(fieldStats, null, 2) + '</pre>';
+
+                    html += '<h4>📄 Sample Documents:</h4>';
+                    html += '<pre>' + JSON.stringify(sampleData.slice(0, 3), null, 2) + '</pre>';
+                }
+
+                html += '</div>';
+                resultsDiv.innerHTML = html;
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="results error"><h3>❌ Analysis Failed</h3><p>${error.message}</p></div>`;
+            }
+        }
+
+        async function findMentors() {
+            const resultsDiv = document.getElementById('mentorResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Searching for mentors...</div>';
+
+            const searchPatterns = [
+                { field: 'role', value: 'mentor' },
+                { field: 'role', value: 'Mentor' },
+                { field: 'userType', value: 'mentor' },
+                { field: 'userType', value: 'Mentor' },
+                { field: 'accountType', value: 'mentor' }
+            ];
+
+            let html = '<div class="results">';
+            html += '<h3>🎓 Mentor Search Results</h3>';
+
+            const usersRef = collection(db, 'users');
+
+            for (const pattern of searchPatterns) {
+                try {
+                    const mentorQuery = query(usersRef, where(pattern.field, '==', pattern.value));
+                    const mentors = await getDocs(mentorQuery);
+                    
+                    if (mentors.docs.length > 0) {
+                        html += `<div class="results success">`;
+                        html += `<p><strong>✅ ${pattern.field}='${pattern.value}':</strong> ${mentors.docs.length} mentors found</p>`;
+                        
+                        // Show first mentor as example
+                        const firstMentor = mentors.docs[0].data();
+                        html += `<details><summary>View sample mentor</summary>`;
+                        html += `<pre>${JSON.stringify(firstMentor, null, 2)}</pre></details>`;
+                        html += `</div>`;
+                    } else {
+                        html += `<div class="results warning">`;
+                        html += `<p><strong>❌ ${pattern.field}='${pattern.value}':</strong> No mentors found</p>`;
+                        html += `</div>`;
+                    }
+                } catch (error) {
+                    html += `<div class="results error">`;
+                    html += `<p><strong>💥 ${pattern.field}='${pattern.value}':</strong> Query failed - ${error.message}</p>`;
+                    html += `</div>`;
+                }
+            }
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        async function testQueries() {
+            const resultsDiv = document.getElementById('analysisResults');
+            resultsDiv.innerHTML = '<div class="loading">🔄 Testing different query patterns...</div>';
+
+            const usersRef = collection(db, 'users');
+            let html = '<div class="results"><h3>🧪 Query Test Results</h3>';
+
+            // Test 1: Simple query
+            try {
+                const simpleQuery = query(usersRef, limit(1));
+                await getDocs(simpleQuery);
+                html += '<p class="success">✅ Simple query: Working</p>';
+            } catch (error) {
+                html += `<p class="error">❌ Simple query: ${error.message}</p>`;
+            }
+
+            // Test 2: Where clause
+            try {
+                const whereQuery = query(usersRef, where('role', '==', 'mentor'), limit(1));
+                await getDocs(whereQuery);
+                html += '<p class="success">✅ Where clause: Working</p>';
+            } catch (error) {
+                html += `<p class="error">❌ Where clause: ${error.message}</p>`;
+            }
+
+            // Test 3: Composite query (this is what's failing in the app)
+            try {
+                const compositeQuery = query(
+                    usersRef,
+                    where('role', '==', 'mentor'),
+                    where('deleted', '!=', true),
+                    orderBy('rating', 'desc')
+                );
+                await getDocs(compositeQuery);
+                html += '<p class="success">✅ Composite query (role + deleted + orderBy): Working</p>';
+            } catch (error) {
+                html += `<p class="error">❌ Composite query: ${error.message}</p>`;
+                if (error.code === 'failed-precondition') {
+                    html += '<p class="warning">💡 This requires a composite index in Firestore</p>';
+                }
+            }
+
+            html += '</div>';
+            resultsDiv.innerHTML = html;
+        }
+
+        function updateSuggestions(docs) {
+            const suggestionsDiv = document.getElementById('suggestions');
+            let html = '<h3>💡 Recommendations</h3>';
+
+            if (docs.length === 0) {
+                html += '<div class="results warning">';
+                html += '<p><strong>Create Test Data:</strong></p>';
+                html += '<ol>';
+                html += '<li>Go to your Firebase Console</li>';
+                html += '<li>Navigate to Firestore Database</li>';
+                html += '<li>Create a "users" collection</li>';
+                html += '<li>Add a document with: <code>{ "role": "mentor", "firstName": "Test", "lastName": "Mentor", "email": "test@mentor.com" }</code></li>';
+                html += '</ol>';
+                html += '</div>';
+            } else {
+                // Check if mentors exist
+                let mentorCount = 0;
+                docs.forEach(doc => {
+                    const data = doc.data();
+                    if (data.role === 'mentor' || data.userType === 'mentor') mentorCount++;
+                });
+
+                if (mentorCount === 0) {
+                    html += '<div class="results warning">';
+                    html += '<p><strong>Add Mentor Role:</strong></p>';
+                    html += '<ul>';
+                    html += '<li>Update existing users to have <code>role: "mentor"</code></li>';
+                    html += '<li>Or register new accounts through your app and set their role to mentor</li>';
+                    html += '</ul>';
+                    html += '</div>';
+                } else {
+                    html += '<div class="results success">';
+                    html += `<p><strong>✅ Found ${mentorCount} mentors!</strong></p>`;
+                    html += '<p>If they\'re still not showing in your app, check:</p>';
+                    html += '<ul>';
+                    html += '<li>Firebase security rules allow reading</li>';
+                    html += '<li>Composite indexes for complex queries</li>';
+                    html += '<li>Console errors in your Angular app</li>';
+                    html += '</ul>';
+                    html += '</div>';
+                }
+            }
+
+            suggestionsDiv.innerHTML = html;
+        }
+
+        // Auto-run quick check on page load
+        runQuickCheck();
+    </script>
+</body>
+</html>

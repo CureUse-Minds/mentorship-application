@@ -318,9 +318,112 @@ export class CalendarService implements OnDestroy {
   }
 
   private initializeData(): void {
-    // Initialize with empty data - real data will come from authentication and database
+    // Initialize with sample data for testing - real data will come from authentication and database
+    const sampleSessions: MentorshipSession[] = [
+      {
+        id: 'session_1',
+        title: 'Work',
+        description: 'Mentorship session',
+        mentorId: 'mentor_1',
+        menteeId: 'mentee_1',
+        mentorName: 'Joy Dimaculangan',
+        menteeName: 'Student',
+        date: new Date('2025-10-20T08:00:00'),
+        startTime: '08:00',
+        endTime: '09:00',
+        duration: '1 hour',
+        status: 'confirmed',
+        location: '',
+        meetingLink: '',
+        agenda: [],
+        notes: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'session_2',
+        title: 'Work',
+        description: 'Mentorship session',
+        mentorId: 'mentor_2',
+        menteeId: 'mentee_1',
+        mentorName: 'Mentor Demo',
+        menteeName: 'Student',
+        date: new Date('2025-10-21T08:00:00'),
+        startTime: '08:00',
+        endTime: '09:00',
+        duration: '1 hour',
+        status: 'confirmed',
+        location: '',
+        meetingLink: '',
+        agenda: [],
+        notes: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'session_3',
+        title: 'Work',
+        description: 'Mentorship session',
+        mentorId: 'mentor_2',
+        menteeId: 'mentee_1',
+        mentorName: 'Mentor Demo',
+        menteeName: 'Student',
+        date: new Date('2025-10-22T08:00:00'),
+        startTime: '08:00',
+        endTime: '09:00',
+        duration: '1 hour',
+        status: 'confirmed',
+        location: '',
+        meetingLink: '',
+        agenda: [],
+        notes: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'session_4',
+        title: 'Work',
+        description: 'Mentorship session',
+        mentorId: 'mentor_2',
+        menteeId: 'mentee_1',
+        mentorName: 'Mentor Demo',
+        menteeName: 'Student',
+        date: new Date('2025-10-23T08:00:00'),
+        startTime: '08:00',
+        endTime: '09:00',
+        duration: '1 hour',
+        status: 'confirmed',
+        location: '',
+        meetingLink: '',
+        agenda: [],
+        notes: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      },
+      {
+        id: 'session_5',
+        title: 'Work',
+        description: 'Mentorship session',
+        mentorId: 'mentor_2',
+        menteeId: 'mentee_1',
+        mentorName: 'Mentor Demo',
+        menteeName: 'Student',
+        date: new Date('2025-10-24T08:00:00'),
+        startTime: '08:00',
+        endTime: '09:00',
+        duration: '1 hour',
+        status: 'confirmed',
+        location: '',
+        meetingLink: '',
+        agenda: [],
+        notes: '',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }
+    ];
+
     this.eventsSubject.next([]);
-    this.sessionsSubject.next([]);
+    this.sessionsSubject.next(sampleSessions);
     this.importedEventsSubject.next([]);
   }
 

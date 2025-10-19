@@ -1,8 +1,8 @@
 import { Injectable, inject } from '@angular/core';
-import { doc, docData, Firestore, getDoc, setDoc } from '@angular/fire/firestore';
+import { doc, docData, Firestore, getDoc, setDoc, collection, query, where, getDocs } from '@angular/fire/firestore';
 import { AuthService } from './auth.service';
 import { catchError, from, Observable, of, switchMap, throwError, map } from 'rxjs';
-import { User } from '../../shared/interfaces';
+import { User, UserRole } from '../../shared/interfaces';
 
 @Injectable({
   providedIn: 'root',
@@ -138,6 +138,32 @@ export class UserService {
           return of(null);
         }
         return this.getUserProfileRealtime(user.id);
+      })
+    );
+  }
+
+  // Get users by role
+  getUsersByRole(role: UserRole): Observable<User[]> {
+    const usersCollection = collection(this.firestore, 'users');
+    const roleQuery = query(usersCollection, where('role', '==', role));
+    
+    return from(getDocs(roleQuery)).pipe(
+      map(snapshot => {
+        const users: User[] = [];
+        snapshot.forEach(doc => {
+          const data = doc.data();
+          users.push({
+            id: doc.id,
+            ...data,
+            createdAt: data['createdAt']?.toDate(),
+            updatedAt: data['updatedAt']?.toDate()
+          } as User);
+        });
+        return users;
+      }),
+      catchError(error => {
+        console.error('Error fetching users by role:', error);
+        return of([]);
       })
     );
   }

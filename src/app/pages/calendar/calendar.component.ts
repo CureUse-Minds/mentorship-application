@@ -23,7 +23,7 @@ import { Subject, takeUntil } from 'rxjs';
               [class.border-transparent]="activeTab !== 'calendar'"
               [class.text-gray-500]="activeTab !== 'calendar'"
               class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300">
-              Calendar View
+              Sessions Calendar
             </button>
             <button 
               (click)="activeTab = 'google-sync'"
@@ -42,48 +42,41 @@ import { Subject, takeUntil } from 'rxjs';
         <div class="mb-6">
           <div class="flex justify-between items-start">
             <div>
-              <h1 class="text-2xl font-bold text-gray-900">Calendar</h1>
-              <p class="text-gray-600">Schedule and manage your mentorship sessions</p>
+              <h1 class="text-2xl font-bold text-gray-900">Sessions</h1>
+              <p class="text-gray-600">View and manage your mentorship sessions in calendar format</p>
             </div>
           
           <!-- Filter Controls -->
           <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-            <h3 class="text-sm font-medium text-gray-900 mb-3">Show Events</h3>
+            <h3 class="text-sm font-medium text-gray-900 mb-3">Session Filters</h3>
             <div class="space-y-2">
               <label class="flex items-center">
                 <input type="checkbox" 
                        [(ngModel)]="showSessions" 
                        (change)="onFilterChange()"
                        class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                <span class="ml-2 text-sm text-gray-700">Sessions</span>
-              </label>
-              <label class="flex items-center">
-                <input type="checkbox" 
-                       [(ngModel)]="showGoals" 
-                       (change)="onFilterChange()"
-                       class="rounded border-gray-300 text-green-600 focus:ring-green-500">
-                <span class="ml-2 text-sm text-gray-700">Goals</span>
+                <span class="ml-2 text-sm font-gray-700 font-medium">Mentorship Sessions</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" 
                        [(ngModel)]="showMeetings" 
                        (change)="onFilterChange()"
                        class="rounded border-gray-300 text-purple-600 focus:ring-purple-500">
-                <span class="ml-2 text-sm text-gray-700">Meetings</span>
+                <span class="ml-2 text-sm text-gray-700">1:1 Meetings</span>
+              </label>
+              <label class="flex items-center">
+                <input type="checkbox" 
+                       [(ngModel)]="showGoals" 
+                       (change)="onFilterChange()"
+                       class="rounded border-gray-300 text-green-600 focus:ring-green-500">
+                <span class="ml-2 text-sm text-gray-700">Goal Deadlines</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" 
                        [(ngModel)]="showReminders" 
                        (change)="onFilterChange()"
                        class="rounded border-gray-300 text-yellow-600 focus:ring-yellow-500">
-                <span class="ml-2 text-sm text-gray-700">Reminders</span>
-              </label>
-              <label class="flex items-center">
-                <input type="checkbox" 
-                       [(ngModel)]="showDeadlines" 
-                       (change)="onFilterChange()"
-                       class="rounded border-gray-300 text-red-600 focus:ring-red-500">
-                <span class="ml-2 text-sm text-gray-700">Deadlines</span>
+                <span class="ml-2 text-sm text-gray-700">Session Reminders</span>
               </label>
               <label class="flex items-center">
                 <input type="checkbox" 
@@ -224,8 +217,18 @@ import { Subject, takeUntil } from 'rxjs';
                     <p class="text-sm text-gray-600">
                       {{ formatSessionDate(session.date) }} at {{ formatSessionTime(session.startTime) }} - {{ session.duration }}
                     </p>
-                    <p class="text-sm text-gray-500">
-                      with {{ session.mentorId !== session.menteeId ? (session.mentorName !== session.menteeName ? session.mentorName + ' & ' + session.menteeName : session.mentorName) : session.mentorName }}
+                    <p class="text-sm text-gray-500 flex items-center">
+                      @if (session.mentorId === 'imported') {
+                        Google Calendar Event
+                        <span class="ml-2 inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-800">
+                          <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                            <path fill-rule="evenodd" d="M12.316 3.051a1 1 0 01.633 1.265l-4 12a1 1 0 11-1.898-.632l4-12a1 1 0 011.265-.633zM5.707 6.293a1 1 0 010 1.414L3.414 10l2.293 2.293a1 1 0 11-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0zm8.586 0a1 1 0 011.414 0l3 3a1 1 0 010 1.414l-3 3a1 1 0 11-1.414-1.414L16.586 10l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                          </svg>
+                          Synced
+                        </span>
+                      } @else {
+                        Mentorship Session with {{ session.mentorName }}
+                      }
                     </p>
                     <span class="inline-block px-2 py-1 text-xs rounded-full"
                           [class.bg-green-100]="session.status === 'confirmed'"
@@ -240,13 +243,13 @@ import { Subject, takeUntil } from 'rxjs';
                 </div>
                 <div class="flex space-x-2">
                   <button (click)="onRescheduleSession(session)" 
-                          [disabled]="session.status === 'cancelled'"
-                          class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50">
+                          [disabled]="session.status === 'cancelled' || session.mentorId === 'imported'"
+                          class="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     Reschedule
                   </button>
                   <button (click)="onCancelSession(session)" 
-                          [disabled]="session.status === 'cancelled'"
-                          class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50">
+                          [disabled]="session.status === 'cancelled' || session.mentorId === 'imported'"
+                          class="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     Cancel
                   </button>
                 </div>
@@ -282,6 +285,97 @@ import { Subject, takeUntil } from 'rxjs';
         (closePopup)="closeDayEventsPopup()"
         (addEventRequested)="onAddEventRequested($event)">
       </app-day-events-popup>
+
+      <!-- Success/Error Messages -->
+      @if (successMessage) {
+        <div class="fixed top-4 right-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded z-50">
+          {{ successMessage }}
+        </div>
+      }
+      @if (errorMessage) {
+        <div class="fixed top-4 right-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded z-50">
+          {{ errorMessage }}
+        </div>
+      }
+
+      <!-- Cancel Confirmation Modal -->
+      @if (showCancelConfirmation) {
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+              <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.98-.833-2.75 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 mb-2">Cancel Session</h3>
+              <p class="text-sm text-gray-500 mb-6">
+                Are you sure you want to cancel this session with {{ selectedSessionForCancel?.mentorName }}?<br>
+                <strong>{{ selectedSessionForCancel?.title }}</strong><br>
+                {{ selectedSessionForCancel?.date | date:'MMM d, y' }} at {{ selectedSessionForCancel?.startTime }}
+              </p>
+              <div class="flex justify-center space-x-3">
+                <button (click)="cancelCancelSession()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  Keep Session
+                </button>
+                <button (click)="confirmCancelSession()" 
+                        class="px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500">
+                  Yes, Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      <!-- Reschedule Modal -->
+      @if (showRescheduleModal) {
+        <div class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3">
+              <div class="flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 mx-auto mb-4">
+                <svg class="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+              </div>
+              <h3 class="text-lg font-medium text-gray-900 text-center mb-4">Reschedule Session</h3>
+              <p class="text-sm text-gray-600 text-center mb-6">
+                Reschedule your session with {{ selectedSessionForReschedule?.mentorName }}<br>
+                <strong>{{ selectedSessionForReschedule?.title }}</strong>
+              </p>
+              
+              <div class="space-y-4 mb-6">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">New Date</label>
+                  <input type="date" 
+                         [(ngModel)]="rescheduleForm.date"
+                         [min]="currentDate | date:'yyyy-MM-dd'"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700 mb-2">New Time</label>
+                  <input type="time" 
+                         [(ngModel)]="rescheduleForm.time"
+                         class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+              </div>
+
+              <div class="flex justify-center space-x-3">
+                <button (click)="cancelRescheduleSession()" 
+                        class="px-4 py-2 bg-gray-300 text-gray-800 text-sm font-medium rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                  Cancel
+                </button>
+                <button (click)="confirmRescheduleSession()" 
+                        [disabled]="!rescheduleForm.date || !rescheduleForm.time"
+                        class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                  Reschedule
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
     </div>
   `,
   styleUrls: []
@@ -311,6 +405,22 @@ export class CalendarComponent implements OnInit, OnDestroy {
   // Day events popup
   isPopupVisible = false;
   selectedPopupDate = new Date();
+
+  // Modal states for reschedule and cancel
+  showRescheduleModal = false;
+  showCancelConfirmation = false;
+  selectedSessionForReschedule: MentorshipSession | null = null;
+  selectedSessionForCancel: MentorshipSession | null = null;
+  
+  // Reschedule form
+  rescheduleForm = {
+    date: '',
+    time: ''
+  };
+
+  // Messages
+  successMessage = '';
+  errorMessage = '';
 
   ngOnInit() {
     this.loadCalendarData();
@@ -395,22 +505,86 @@ export class CalendarComponent implements OnInit, OnDestroy {
   }
   
   onRescheduleSession(session: MentorshipSession) {
-    // TODO: Open reschedule modal
+    // Check if this is an imported Google Calendar event
+    if (session.mentorId === 'imported' || (session as any).isImported) {
+      this.showErrorMessage('Google Calendar events cannot be rescheduled from here. Please reschedule in Google Calendar.');
+      return;
+    }
+    
+    this.selectedSessionForReschedule = session;
+    this.showRescheduleModal = true;
   }
   
   onCancelSession(session: MentorshipSession) {
-    // TODO: Show confirmation and cancel session
+    // Check if this is an imported Google Calendar event
+    if (session.mentorId === 'imported' || (session as any).isImported) {
+      this.showErrorMessage('Google Calendar events cannot be cancelled from here. Please cancel in Google Calendar.');
+      return;
+    }
+    
+    this.selectedSessionForCancel = session;
+    this.showCancelConfirmation = true;
+  }
+
+  confirmCancelSession() {
+    if (!this.selectedSessionForCancel) return;
+    
     this.calendarService.updateSession({
-      id: session.id,
+      id: this.selectedSessionForCancel.id,
       status: 'cancelled'
     }).subscribe({
       next: () => {
         this.loadUpcomingSessions(); // Refresh list
+        this.showCancelConfirmation = false;
+        this.selectedSessionForCancel = null;
+        this.showSuccessMessage('Session cancelled successfully');
       },
       error: (error) => {
-        // Error cancelling session
+        console.error('Error cancelling session:', error);
+        this.showErrorMessage('Failed to cancel session. Please try again.');
       }
     });
+  }
+
+  cancelCancelSession() {
+    this.showCancelConfirmation = false;
+    this.selectedSessionForCancel = null;
+  }
+
+  confirmRescheduleSession() {
+    if (!this.selectedSessionForReschedule || !this.rescheduleForm.date || !this.rescheduleForm.time) return;
+    
+    const newDate = new Date(this.rescheduleForm.date);
+    const [hours, minutes] = this.rescheduleForm.time.split(':');
+    newDate.setHours(parseInt(hours), parseInt(minutes));
+    
+    const updateData = {
+      id: this.selectedSessionForReschedule.id,
+      date: newDate,
+      startTime: this.rescheduleForm.time,
+      duration: this.selectedSessionForReschedule.duration, // Preserve duration
+      status: 'rescheduled' as const
+    };
+    
+    this.calendarService.updateSession(updateData).subscribe({
+      next: () => {
+        this.loadUpcomingSessions(); // Refresh list
+        this.showRescheduleModal = false;
+        this.selectedSessionForReschedule = null;
+        this.resetRescheduleForm();
+        this.showSuccessMessage('Session rescheduled successfully');
+      },
+      error: (error) => {
+        console.error('Error rescheduling session:', error);
+        this.showErrorMessage('Failed to reschedule session. Please try again.');
+      }
+    });
+  }
+
+  cancelRescheduleSession() {
+    this.showRescheduleModal = false;
+    this.selectedSessionForReschedule = null;
+    this.resetRescheduleForm();
   }
   
   onFilterChange() {
@@ -446,7 +620,28 @@ export class CalendarComponent implements OnInit, OnDestroy {
     }
   }
 
+  private showSuccessMessage(message: string) {
+    this.successMessage = message;
+    this.errorMessage = '';
+    setTimeout(() => {
+      this.successMessage = '';
+    }, 5000);
+  }
 
+  private showErrorMessage(message: string) {
+    this.errorMessage = message;
+    this.successMessage = '';
+    setTimeout(() => {
+      this.errorMessage = '';
+    }, 5000);
+  }
+
+  private resetRescheduleForm() {
+    this.rescheduleForm = {
+      date: '',
+      time: ''
+    };
+  }
 
   private getMonthName(month: number): string {
     const months = [

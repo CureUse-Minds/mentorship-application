@@ -134,6 +134,42 @@ export class ProfileService {
     );
   }
 
+  // ROLE SWITCHING FUNCTIONALITY
+  switchUserRole(userId: string, newRole: 'mentor' | 'mentee'): Observable<void> {
+    const profileRef = doc(this.firestore, `profiles/${userId}`);
+    const roleUpdate = {
+      role: newRole,
+      updatedAt: new Date()
+    };
+    return from(updateDoc(profileRef, roleUpdate));
+  }
+
+  switchCurrentUserRole(newRole: 'mentor' | 'mentee'): Observable<void> {
+    return this.authService.user$.pipe(
+      take(1),
+      switchMap((user) => {
+        if (!user) {
+          return throwError(() => new Error('No authenticated user'));
+        }
+        return this.switchUserRole(user.id, newRole);
+      })
+    );
+  }
+
+  getCurrentUserRole(): Observable<'mentor' | 'mentee' | null> {
+    return this.authService.user$.pipe(
+      take(1),
+      switchMap((user) => {
+        if (!user) {
+          return of(null);
+        }
+        return this.getProfile(user.id).pipe(
+          map((profile) => profile?.role || null)
+        );
+      })
+    );
+  }
+
   // Mentor-specific methods
   getMentorProfile(userId: string): Observable<MentorProfile | null> {
     return this.getProfile(userId).pipe(

@@ -31,6 +31,12 @@ export const routes: Routes = [
       import('./pages/calendar/calendar.component').then((c) => c.CalendarComponent),
   },
   {
+    path: 'booking',
+    canActivate: [AuthGuard],
+    loadComponent: () =>
+      import('./pages/booking/booking.component').then((c) => c.BookingComponent),
+  },
+  {
     path: 'home',
     loadComponent: () =>
       import('./shared/components/home/home.component').then((c) => c.HomeComponent),
@@ -57,6 +63,11 @@ export const routes: Routes = [
         path: 'requests',
         loadComponent: () =>
           import('./pages/mentor/requests/requests.component').then((c) => c.Requests),
+      },
+      {
+        path: 'assignments',
+        loadComponent: () =>
+          import('./pages/mentor/mentor-assignments/mentor-assignments.component').then((c) => c.MentorAssignmentsComponent),
       },
       {
         path: '',
@@ -105,12 +116,6 @@ export const routes: Routes = [
     canActivate: [AuthGuard],
     loadComponent: () =>
       import('./pages/messages/messages.component').then((c) => c.MessagesComponent),
-  },
-  {
-    path: 'progress',
-    canActivate: [AuthGuard],
-    loadComponent: () =>
-      import('./pages/progress/progress.component').then((c) => c.ProgressComponent),
   },
   {
     path: 'resources',

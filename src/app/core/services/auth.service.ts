@@ -329,4 +329,67 @@ export class AuthService {
       catchError(() => of({ verified: false, message: 'Error checking verification status' }))
     );
   }
+
+  // ROLE SYNCHRONIZATION METHODS
+  
+  /**
+   * Get user with actual role from Firestore profile
+   * This method ensures the user object has the current role from Firestore
+   */
+  getUserWithActualRole(): Observable<User | null> {
+    // Note: This would require injecting ProfileService, which creates circular dependency
+    // Instead, this should be handled at the component level or via a separate service
+    // For now, returning the basic user observable
+    return this.user$;
+  }
+
+  /**
+   * Force refresh of user authentication state
+   * Useful after role changes to ensure UI updates
+   */
+  refreshUserState(): Observable<User | null> {
+    return this.user$.pipe(
+      take(1),
+      switchMap((user) => {
+        if (!user) {
+          return of(null);
+        }
+        
+        // Force Firebase to refresh user data
+        const currentUser = this.auth.currentUser;
+        if (currentUser) {
+          return from(reload(currentUser)).pipe(
+            switchMap(() => this.user$.pipe(take(1)))
+          );
+        }
+        
+        return of(user);
+      })
+    );
+  }
+
+  /**
+   * Check if current user can perform role-specific actions
+   */
+  canPerformAction(requiredRole: 'mentor' | 'mentee'): Observable<boolean> {
+    // This should check against Firestore profile, not Firebase Auth
+    // Implementation would require ProfileService integration
+    return this.user$.pipe(
+      take(1),
+      map((user) => {
+        // Temporary implementation - in real app, fetch from Firestore
+        return user !== null;
+      })
+    );
+  }
+
+  /**
+   * Get current user ID for profile operations
+   */
+  getCurrentUserId(): Observable<string | null> {
+    return this.user$.pipe(
+      take(1),
+      map((user) => user?.id || null)
+    );
+  }
 }

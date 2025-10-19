@@ -1,0 +1,576 @@
+<!-- Main Goals Interface -->
+<div class="min-h-screen bg-gray-50">
+  <!-- Header Section -->
+  <div class="bg-white shadow-sm border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div class="flex items-center justify-between">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-900">My Goals</h1>
+          <p class="text-gray-600 mt-1">Set, track, and achieve your mentorship objectives</p>
+        </div>
+        <button (click)="openCreateModal()" 
+                class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors">
+          <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+          </svg>
+          New Goal
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Tab Navigation -->
+    <div class="mb-6">
+      <!-- Search Bar -->
+      <div class="mb-4">
+        <div class="max-w-md">
+          <div class="relative">
+            <input type="text" 
+                   placeholder="Search goals, skills, or milestones..." 
+                   (input)="onSearchChange($event)"
+                   class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="border-b border-gray-200">
+        <nav class="-mb-px flex space-x-8">
+          <button (click)="setActiveTab('all')"
+                  [class.border-blue-500]="activeTab() === 'all'"
+                  [class.text-blue-600]="activeTab() === 'all'"
+                  [class.border-transparent]="activeTab() !== 'all'"
+                  [class.text-gray-500]="activeTab() !== 'all'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300 transition-colors">
+            All Goals <span class="ml-1 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">{{ goals().length }}</span>
+          </button>
+          <button (click)="setActiveTab('active')"
+                  [class.border-blue-500]="activeTab() === 'active'"
+                  [class.text-blue-600]="activeTab() === 'active'"
+                  [class.border-transparent]="activeTab() !== 'active'"
+                  [class.text-gray-500]="activeTab() !== 'active'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300 transition-colors">
+            Active <span class="ml-1 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">{{ activeGoalsCount() }}</span>
+          </button>
+          <button (click)="setActiveTab('completed')"
+                  [class.border-blue-500]="activeTab() === 'completed'"
+                  [class.text-blue-600]="activeTab() === 'completed'"
+                  [class.border-transparent]="activeTab() !== 'completed'"
+                  [class.text-gray-500]="activeTab() !== 'completed'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300 transition-colors">
+            Completed <span class="ml-1 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">{{ completedGoalsCount() }}</span>
+          </button>
+          <button (click)="setActiveTab('paused')"
+                  [class.border-blue-500]="activeTab() === 'paused'"
+                  [class.text-blue-600]="activeTab() === 'paused'"
+                  [class.border-transparent]="activeTab() !== 'paused'"
+                  [class.text-gray-500]="activeTab() !== 'paused'"
+                  class="whitespace-nowrap py-2 px-1 border-b-2 font-medium text-sm hover:text-gray-700 hover:border-gray-300 transition-colors">
+            Paused <span class="ml-1 bg-gray-100 text-gray-600 py-1 px-2 rounded-full text-xs">{{ pausedGoalsCount() }}</span>
+          </button>
+        </nav>
+      </div>
+    </div>
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="flex justify-center items-center py-12">
+        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <span class="ml-3 text-gray-600">Loading goals...</span>
+      </div>
+    }
+
+    <!-- Goals Grid -->
+    @if (!isLoading()) {
+      @if (filteredGoals().length === 0) {
+        <!-- Empty State -->
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
+          <div class="text-gray-400 mb-4">
+            <svg class="mx-auto h-16 w-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                    d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">No Goals Yet</h3>
+          <p class="text-gray-500 mb-6">Start your mentorship journey by setting your first goal</p>
+          <button (click)="openCreateModal()" 
+                  class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+            </svg>
+            Create Your First Goal
+          </button>
+        </div>
+      } @else {
+        <!-- Goals Cards -->
+        <div class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          @for (goal of filteredGoals(); track goal.id) {
+            <div class="bg-white rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+              <!-- Goal Header -->
+              <div class="p-6 pb-4">
+                <div class="flex items-start justify-between mb-4">
+                  <div class="flex-1">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-2">{{ goal.title }}</h3>
+                    <p class="text-sm text-gray-600 line-clamp-2">{{ goal.description }}</p>
+                  </div>
+                  <div class="flex flex-col items-end space-y-2">
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium border"
+                          [ngClass]="getPriorityColor(goal.priority)">
+                      {{ goal.priority | titlecase }}
+                    </span>
+                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium"
+                          [ngClass]="getStatusColor(goal.status)">
+                      {{ goal.status | titlecase }}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Progress Bar -->
+                <div class="mb-4">
+                  <div class="flex justify-between text-sm mb-1">
+                    <span class="text-gray-600">Progress</span>
+                    <span class="font-medium text-gray-900">{{ goal.progress }}%</span>
+                  </div>
+                  <div class="w-full bg-gray-200 rounded-full h-2">
+                    <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                         [style.width.%]="goal.progress"></div>
+                  </div>
+                </div>
+
+                <!-- Target Date -->
+                <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
+                  <span>Target: {{ formatDate(goal.targetDate) }}</span>
+                  @if (getDaysRemaining(goal.targetDate) > 0) {
+                    <span class="text-blue-600">{{ getDaysRemaining(goal.targetDate) }} days left</span>
+                  } @else if (getDaysRemaining(goal.targetDate) === 0) {
+                    <span class="text-orange-600">Due today</span>
+                  } @else {
+                    <span class="text-red-600">{{ Math.abs(getDaysRemaining(goal.targetDate)) }} days overdue</span>
+                  }
+                </div>
+
+                <!-- Skills Tags -->
+                @if (goal.skills.length > 0) {
+                  <div class="mb-4">
+                    <div class="flex flex-wrap gap-1">
+                      @for (skill of goal.skills.slice(0, 3); track skill) {
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          {{ skill }}
+                        </span>
+                      }
+                      @if (goal.skills.length > 3) {
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                          +{{ goal.skills.length - 3 }} more
+                        </span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Milestones -->
+              @if (goal.milestones.length > 0) {
+                <div class="border-t border-gray-100 px-6 py-4">
+                  <h4 class="text-sm font-medium text-gray-900 mb-3">Milestones</h4>
+                  <div class="space-y-2">
+                    @for (milestone of goal.milestones.slice(0, 3); track milestone.id) {
+                      <div class="flex items-center">
+                        <button (click)="toggleMilestone(goal, milestone)"
+                                class="flex-shrink-0 w-4 h-4 rounded border-2 mr-3 transition-colors cursor-pointer"
+                                [class.bg-green-500]="milestone.completed"
+                                [class.border-green-500]="milestone.completed"
+                                [class.border-gray-300]="!milestone.completed"
+                                [class.hover:border-green-400]="!milestone.completed">
+                          @if (milestone.completed) {
+                            <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                              <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                            </svg>
+                          }
+                        </button>
+                        <span class="text-sm text-gray-700"
+                              [class.line-through]="milestone.completed"
+                              [class.text-gray-400]="milestone.completed">
+                          {{ milestone.title }}
+                        </span>
+                      </div>
+                    }
+                    @if (goal.milestones.length > 3) {
+                      <div class="text-xs text-gray-400">
+                        +{{ goal.milestones.length - 3 }} more milestones
+                      </div>
+                    }
+                  </div>
+                </div>
+              }
+
+              <!-- Goal Actions -->
+              <div class="border-t border-gray-100 px-6 py-4">
+                <div class="flex items-center justify-between">
+                  <div class="flex space-x-2">
+                    <!-- Edit Icon -->
+                    <button (click)="openEditModal(goal)"
+                            class="text-blue-600 hover:text-blue-700 hover:bg-blue-50 p-2.5 rounded-full transition-all duration-200 border border-transparent hover:border-blue-200"
+                            title="Edit Goal">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0115.75 21H5.25A2.25 2.25 0 013 18.75V8.25A2.25 2.25 0 015.25 6H10"/>
+                      </svg>
+                    </button>
+                    
+                    @if (goal.status === 'active') {
+                      <!-- Pause Icon -->
+                      <button (click)="pauseGoal(goal)"
+                              class="text-amber-600 hover:text-amber-700 hover:bg-amber-50 p-2.5 rounded-full transition-all duration-200 border border-transparent hover:border-amber-200"
+                              title="Pause Goal">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                        </svg>
+                      </button>
+                    } @else if (goal.status === 'paused') {
+                      <!-- Resume/Play Icon -->
+                      <button (click)="resumeGoal(goal)"
+                              class="text-green-600 hover:text-green-700 hover:bg-green-50 p-2.5 rounded-full transition-all duration-200 border border-transparent hover:border-green-200"
+                              title="Resume Goal">
+                        <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </button>
+                    }
+                    
+                    @if (goal.status !== 'completed') {
+                      <!-- Complete/Check Icon -->
+                      <button (click)="markGoalComplete(goal)"
+                              class="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 p-2.5 rounded-full transition-all duration-200 border border-transparent hover:border-emerald-200"
+                              title="Mark as Complete">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2.5">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                      </button>
+                    }
+                    
+                    <!-- Delete Icon -->
+                    <button (click)="openDeleteModal(goal)"
+                            class="text-red-600 hover:text-red-700 hover:bg-red-50 p-2.5 rounded-full transition-all duration-200 border border-transparent hover:border-red-200"
+                            title="Delete Goal">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+                      </svg>
+                    </button>
+                  </div>
+                  
+                  @if (goal.status === 'active' && goal.progress < 100) {
+                    <button (click)="updateProgress(goal, Math.min(100, goal.progress + 10))"
+                            class="inline-flex items-center px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full hover:bg-emerald-100 hover:border-emerald-300 transition-all duration-200">
+                      <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6"/>
+                      </svg>
+                      +10%
+                    </button>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</div>
+
+<!-- Create Goal Modal -->
+@if (showCreateModal()) {
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
+      <form [formGroup]="goalForm" (ngSubmit)="onSubmit()">
+        <!-- Modal Header -->
+        <div class="px-4 py-4 border-b border-gray-200 bg-white rounded-t-lg sm:px-6">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-semibold text-gray-900">Create New Goal</h3>
+            <button type="button" (click)="closeModals()" 
+                    class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-4 py-4 space-y-4 sm:px-6">
+          <!-- Basic Info -->
+          <div class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Goal Title</label>
+              <input type="text" formControlName="title"
+                     class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="e.g., Master React Development">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+              <textarea formControlName="description" rows="3"
+                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                        placeholder="Describe what you want to achieve and why it's important..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select formControlName="priority"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
+                <input type="date" formControlName="targetDate"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+
+          <!-- Skills -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <label class="block text-sm font-medium text-gray-700">Skills to Develop</label>
+              <button type="button" (click)="addSkill()"
+                      class="text-sm text-blue-600 hover:text-blue-800">
+                + Add Skill
+              </button>
+            </div>
+            <div class="space-y-2">
+              @for (control of skills.controls; track $index; let i = $index) {
+                <div class="flex items-center space-x-2">
+                  <input type="text" [formControlName]="i"
+                         class="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                         placeholder="e.g., JavaScript, Leadership, Communication">
+                  <button type="button" (click)="removeSkill(i)"
+                          class="text-red-600 hover:text-red-800">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                  </button>
+                </div>
+              }
+              @if (skills.length === 0) {
+                <p class="text-sm text-gray-500 italic">No skills added yet</p>
+              }
+            </div>
+          </div>
+
+          <!-- Milestones -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <label class="block text-sm font-medium text-gray-700">Milestones</label>
+              <button type="button" (click)="addMilestone()"
+                      class="text-sm text-blue-600 hover:text-blue-800">
+                + Add Milestone
+              </button>
+            </div>
+            <div class="space-y-4">
+              @for (control of milestones.controls; track $index; let i = $index) {
+                <div class="border border-gray-200 rounded-md p-4" [formGroupName]="i">
+                  <div class="flex items-start justify-between mb-3">
+                    <div class="flex-1 space-y-3">
+                      <input type="text" formControlName="title"
+                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                             placeholder="Milestone title">
+                      <textarea formControlName="description" rows="2"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                                placeholder="Optional description"></textarea>
+                      <input type="date" formControlName="targetDate"
+                             class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button type="button" (click)="removeMilestone(i)"
+                            class="ml-3 text-red-600 hover:text-red-800">
+                      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              }
+              @if (milestones.length === 0) {
+                <p class="text-sm text-gray-500 italic">No milestones added yet</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="flex justify-end space-x-3 px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg sm:px-6">
+          <button type="button" (click)="closeModals()"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+            Cancel
+          </button>
+          <button type="submit" 
+                  [disabled]="!canSubmitForm() || isLoading()"
+                  [class.opacity-50]="!canSubmitForm() || isLoading()"
+                  [class.cursor-not-allowed]="!canSubmitForm() || isLoading()"
+                  class="px-6 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 transition-colors disabled:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            @if (isLoading()) {
+              <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Creating...
+            } @else {
+              Create Goal
+            }
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Edit Goal Modal (similar structure to create modal) -->
+@if (showEditModal()) {
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto mx-4">
+      <form [formGroup]="goalForm" (ngSubmit)="onSubmit()">
+        <!-- Modal Header -->
+        <div class="px-6 py-4 border-b border-gray-200">
+          <div class="flex items-center justify-between">
+            <h3 class="text-lg font-medium text-gray-900">Edit Goal</h3>
+            <button type="button" (click)="closeModals()" 
+                    class="text-gray-400 hover:text-gray-600">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Same form structure as create modal -->
+        <div class="px-6 py-4 space-y-6">
+          <!-- Form content identical to create modal -->
+          <!-- Basic Info -->
+          <div class="grid grid-cols-1 gap-6">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Goal Title</label>
+              <input type="text" formControlName="title"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                     placeholder="e.g., Master React Development">
+            </div>
+
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea formControlName="description" rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Describe what you want to achieve and why it's important..."></textarea>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                <select formControlName="priority"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Target Date</label>
+                <input type="date" formControlName="targetDate"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-end space-x-3">
+          <button type="button" (click)="closeModals()"
+                  class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50">
+            Cancel
+          </button>
+          <button type="submit" [disabled]="goalForm.invalid"
+                  class="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50">
+            Update Goal
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+}
+
+<!-- Delete Confirmation Modal -->
+@if (showDeleteModal()) {
+  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 flex items-center justify-center z-50 p-4 sm:p-6 lg:p-8">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4">
+      <!-- Modal Header -->
+      <div class="px-4 py-4 border-b border-gray-200 bg-white rounded-t-lg sm:px-6">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center">
+            <div class="flex-shrink-0">
+              <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+              </svg>
+            </div>
+            <h3 class="ml-3 text-lg font-semibold text-gray-900">Delete Goal</h3>
+          </div>
+          <button type="button" (click)="closeModals()" 
+                  class="text-gray-400 hover:text-gray-600 hover:bg-gray-100 p-1 rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Body -->
+      <div class="px-4 py-6 sm:px-6">
+        <div class="text-center">
+          <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+            <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+            </svg>
+          </div>
+          <h3 class="text-lg font-medium text-gray-900 mb-2">Are you sure?</h3>
+          <p class="text-sm text-gray-500 mb-2">
+            You're about to delete the goal:
+          </p>
+          <p class="text-base font-semibold text-gray-900 mb-2">
+            "{{ selectedGoal()?.title }}"
+          </p>
+          <p class="text-sm text-gray-500">
+            This action cannot be undone. All progress, milestones, and associated data will be permanently removed.
+          </p>
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="flex justify-end space-x-3 px-4 py-4 border-t border-gray-200 bg-gray-50 rounded-b-lg sm:px-6">
+        <button type="button" (click)="closeModals()"
+                class="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+          Cancel
+        </button>
+        <button type="button" (click)="deleteGoal()"
+                [disabled]="isLoading()"
+                [class.opacity-50]="isLoading()"
+                [class.cursor-not-allowed]="isLoading()"
+                class="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md hover:bg-red-700 transition-colors disabled:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500">
+          @if (isLoading()) {
+            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white inline" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Deleting...
+          } @else {
+            Delete Goal
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

@@ -2,8 +2,6 @@ import { Component, OnInit, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, Validators, FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { MessagesService } from '../../shared/services/messages.service';
-import { AuthService } from '../../core/services/auth.service';
 
 interface SimpleMessage {
   id: string;
@@ -271,8 +269,6 @@ interface SimpleConversation {
 export class MessagesComponent implements OnInit, OnDestroy {
   private destroy$ = new Subject<void>();
   private fb = inject(FormBuilder);
-  private messagesService = inject(MessagesService);
-  private authService = inject(AuthService);
 
   // Signals
   conversations = signal<SimpleConversation[]>([]);
@@ -283,9 +279,107 @@ export class MessagesComponent implements OnInit, OnDestroy {
   // Component state
   searchTerm = '';
   showNewConversationModal = false;
-  currentUserId = '';
+  currentUserId = 'current-user';
   
-  availableContacts: any[] = [];
+  availableContacts = [
+    'Dr. Sarah Wilson (Mentor)',
+    'Prof. Michael Chen (Mentor)', 
+    'Alexandra Rodriguez (Mentee)',
+    'James Thompson (Mentee)'
+  ];
+
+  // Sample data
+  sampleConversations: SimpleConversation[] = [
+    {
+      id: '1',
+      title: 'Dr. Sarah Wilson',
+      lastMessage: 'Great work on the latest assignment! Keep it up.',
+      unreadCount: 2,
+      timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+      isOnline: true
+    },
+    {
+      id: '2', 
+      title: 'Prof. Michael Chen',
+      lastMessage: 'Let\'s schedule a meeting to discuss your research progress.',
+      unreadCount: 0,
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+      isOnline: false
+    },
+    {
+      id: '3',
+      title: 'Alexandra Rodriguez', 
+      lastMessage: 'Thank you for the guidance on the project!',
+      unreadCount: 1,
+      timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4), // 4 hours ago
+      isOnline: true
+    }
+  ];
+
+  sampleMessages: { [conversationId: string]: SimpleMessage[] } = {
+    '1': [
+      {
+        id: '1',
+        content: 'Hi Dr. Wilson! I have a question about the assignment.',
+        senderId: 'current-user',
+        senderName: 'You',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60),
+        isOwn: true
+      },
+      {
+        id: '2', 
+        content: 'Of course! What would you like to know?',
+        senderId: 'dr-wilson',
+        senderName: 'Dr. Sarah Wilson',
+        timestamp: new Date(Date.now() - 1000 * 60 * 45),
+        isOwn: false
+      },
+      {
+        id: '3',
+        content: 'I\'m having trouble with the data analysis section.',
+        senderId: 'current-user', 
+        senderName: 'You',
+        timestamp: new Date(Date.now() - 1000 * 60 * 40),
+        isOwn: true
+      },
+      {
+        id: '4',
+        content: 'Great work on the latest assignment! Keep it up.',
+        senderId: 'dr-wilson',
+        senderName: 'Dr. Sarah Wilson', 
+        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        isOwn: false
+      }
+    ],
+    '2': [
+      {
+        id: '5',
+        content: 'Hello Professor! How are you?',
+        senderId: 'current-user',
+        senderName: 'You',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+        isOwn: true
+      },
+      {
+        id: '6',
+        content: 'Let\'s schedule a meeting to discuss your research progress.',
+        senderId: 'prof-chen',
+        senderName: 'Prof. Michael Chen',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        isOwn: false
+      }
+    ],
+    '3': [
+      {
+        id: '7',
+        content: 'Thank you for the guidance on the project!',
+        senderId: 'alexandra',
+        senderName: 'Alexandra Rodriguez',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+        isOwn: false
+      }
+    ]
+  };
 
   // Forms
   messageForm = this.fb.group({
@@ -298,55 +392,8 @@ export class MessagesComponent implements OnInit, OnDestroy {
   });
 
   ngOnInit(): void {
-    // Get current user ID from auth service
-    this.authService.user$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(user => {
-        if (user) {
-          this.currentUserId = user.id;
-        }
-      });
-
-    // Subscribe to conversations from Firebase
-    this.messagesService.conversations$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(conversations => {
-        this.conversations.set(conversations);
-        this.filteredConversations.set(conversations);
-      });
-
-    // Subscribe to messages for active conversation
-    this.messagesService.messages$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(messages => {
-        const transformedMessages: SimpleMessage[] = messages.map(msg => ({
-          ...msg,
-          isOwn: msg.senderId === this.currentUserId
-        }));
-        this.messages.set(transformedMessages);
-      });
-
-    // Subscribe to active conversation
-    this.messagesService.activeConversation$
-      .pipe(takeUntil(this.destroy$))
-      .subscribe(conversation => {
-        if (conversation) {
-          const simpleConv: SimpleConversation = {
-            id: conversation.id,
-            title: conversation.participantNames.find(name => 
-              conversation.participantIds[conversation.participantNames.indexOf(name)] !== this.currentUserId
-            ) || 'Unknown User',
-            lastMessage: conversation.lastMessage,
-            unreadCount: conversation.unreadCount[this.currentUserId] || 0,
-            timestamp: conversation.lastMessageTimestamp,
-            isOnline: false
-          };
-          this.activeConversation.set(simpleConv);
-        }
-      });
-
-    // Load available users
-    this.loadAvailableUsers();
+    this.conversations.set(this.sampleConversations);
+    this.filteredConversations.set(this.sampleConversations);
   }
 
   ngOnDestroy(): void {
@@ -356,71 +403,76 @@ export class MessagesComponent implements OnInit, OnDestroy {
 
   // Event handlers
   selectConversation(conversation: SimpleConversation): void {
-    this.messagesService.setActiveConversation(conversation.id);
+    this.activeConversation.set(conversation);
+    // Mark as read
+    conversation.unreadCount = 0;
+    this.conversations.update(convs => [...convs]);
   }
 
-  async sendMessage(): Promise<void> {
+  sendMessage(): void {
     if (!this.messageForm.valid || !this.activeConversation()) return;
 
     const content = this.messageForm.get('content')?.value || '';
-    const conversationId = this.activeConversation()?.id;
+    const activeConv = this.activeConversation()!;
     
-    if (!conversationId || !content.trim()) return;
+    const newMessage: SimpleMessage = {
+      id: Date.now().toString(),
+      content,
+      senderId: this.currentUserId,
+      senderName: 'You',
+      timestamp: new Date(),
+      isOwn: true
+    };
 
-    try {
-      await this.messagesService.sendMessage(conversationId, content);
-      this.messageForm.reset();
-    } catch (error) {
-      console.error('Error sending message:', error);
-      // Could add toast notification here
+    // Add message to conversation
+    if (!this.sampleMessages[activeConv.id]) {
+      this.sampleMessages[activeConv.id] = [];
     }
+    this.sampleMessages[activeConv.id].push(newMessage);
+
+    // Update conversation last message
+    activeConv.lastMessage = content;
+    activeConv.timestamp = new Date();
+
+    this.messageForm.reset();
+    this.conversations.update(convs => [...convs]);
   }
 
-  async loadAvailableUsers(): Promise<void> {
-    try {
-      this.availableContacts = await this.messagesService.getAvailableUsers();
-    } catch (error) {
-      console.error('Error loading users:', error);
-    }
-  }
-
-  async createNewConversation(): Promise<void> {
+  createNewConversation(): void {
     if (!this.newConversationForm.valid) return;
 
     const formValue = this.newConversationForm.value;
     const contactName = formValue.contactName || '';
     const initialMessage = formValue.initialMessage || '';
 
-    try {
-      // For now, use a mock user ID - you'll need to integrate with your user selection
-      const selectedUser = this.availableContacts.find(contact => 
-        contact.name === contactName.replace(' (Mentor)', '').replace(' (Mentee)', '')
-      );
-      
-      if (!selectedUser) {
-        console.error('User not found');
-        return;
-      }
+    const newConversation: SimpleConversation = {
+      id: Date.now().toString(),
+      title: contactName,
+      lastMessage: initialMessage || 'Conversation started',
+      unreadCount: 0,
+      timestamp: new Date(),
+      isOnline: Math.random() > 0.5
+    };
 
-      const conversationId = await this.messagesService.createConversation(
-        selectedUser.id, 
-        selectedUser.name
-      );
-
-      // Send initial message if provided
-      if (initialMessage.trim()) {
-        await this.messagesService.sendMessage(conversationId, initialMessage);
-      }
-
-      // Set as active conversation
-      this.messagesService.setActiveConversation(conversationId);
-
-      this.showNewConversationModal = false;
-      this.newConversationForm.reset();
-    } catch (error) {
-      console.error('Error creating conversation:', error);
-      // Could add toast notification here
+    // Add initial message if provided
+    if (initialMessage) {
+      this.sampleMessages[newConversation.id] = [{
+        id: Date.now().toString(),
+        content: initialMessage,
+        senderId: this.currentUserId,
+        senderName: 'You',
+        timestamp: new Date(),
+        isOwn: true
+      }];
     }
+
+    this.conversations.update(convs => [newConversation, ...convs]);
+    this.filterConversations();
+    this.showNewConversationModal = false;
+    this.newConversationForm.reset();
+    
+    // Select the new conversation
+    this.selectConversation(newConversation);
   }
 
   onMessageKeyDown(event: KeyboardEvent): void {
@@ -445,7 +497,9 @@ export class MessagesComponent implements OnInit, OnDestroy {
   }
 
   currentMessages(): SimpleMessage[] {
-    return this.messages();
+    const activeConv = this.activeConversation();
+    if (!activeConv) return [];
+    return this.sampleMessages[activeConv.id] || [];
   }
 
   // Utility methods
